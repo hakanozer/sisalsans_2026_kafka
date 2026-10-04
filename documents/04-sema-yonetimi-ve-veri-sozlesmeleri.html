@@ -1,0 +1,122 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>04 · Şema Yönetimi ve Veri Sözleşmeleri</title><style>
+:root{color-scheme:light dark;--bg:#f4f6fa;--s:#fff;--s2:#edf1f7;--t:#172033;--m:#526078;--l:#d6deea;--a:#3157c8;--as:#e7edff;--c:#111827;--ct:#e7edf7;--w:#805400}@media(prefers-color-scheme:dark){:root{--bg:#10141d;--s:#191f2b;--s2:#222b3a;--t:#edf2fa;--m:#b2bfd2;--l:#354155;--a:#9db4ff;--as:#283858;--c:#0b0f16;--ct:#e7edf7;--w:#f2ca76}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--a)}.hero{padding:3rem max(1rem,calc((100% - 1100px)/2));background:linear-gradient(120deg,#172b57,#3157c8,#5675d8);color:white}.hero p{color:#e0e8ff}.eyebrow{font-size:.8rem;letter-spacing:.12em;color:#c5d3ff}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;margin:.4rem 0}main{width:min(1100px,calc(100% - 2rem));margin:1.5rem auto 4rem}.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1rem}nav,article,.card{background:var(--s);border:1px solid var(--l);border-radius:14px;box-shadow:0 8px 25px #13234112}nav{position:sticky;top:1rem;padding:1rem;height:max-content;max-height:95vh;overflow:auto}nav a{display:block;padding:.2rem;color:var(--m);text-decoration:none;font-size:.9rem}article{padding:clamp(1rem,3vw,2rem);min-width:0}section{margin-bottom:2.4rem}h2{border-bottom:1px solid var(--l);padding-bottom:.35rem}h3{margin:1.2rem 0 .3rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem}.card{padding:1rem;box-shadow:none}.callout{padding:.8rem 1rem;background:var(--as);border-left:4px solid var(--a);margin:1rem 0}.warn{border-color:var(--w)}.tabs{border:1px solid var(--l);border-radius:10px;overflow:hidden;margin:1rem 0}.tabbar{display:flex;background:var(--s2);padding:.4rem;gap:.3rem}.tabbar button{border:0;padding:.5rem .8rem;border-radius:6px;background:transparent;color:var(--t);cursor:pointer}.tabbar button[aria-selected=true]{background:var(--s);color:var(--a);font-weight:bold}.tabpanel{padding:1rem}[hidden]{display:none!important}pre{position:relative;overflow:auto;padding:2.5rem 1rem 1rem;border-radius:9px;background:var(--c);color:var(--ct);font:.86rem/1.55 ui-monospace,Consolas,monospace}pre code{white-space:pre}.copy{position:absolute;right:.5rem;top:.5rem;background:#283244;color:white;border:1px solid #606b7b;border-radius:5px;padding:.2rem .5rem;cursor:pointer}code:not(pre code){background:var(--s2);padding:.08rem .25rem;border-radius:4px;font:.92em ui-monospace,Consolas,monospace}table{border-collapse:collapse;width:100%;margin:1rem 0}td,th{border:1px solid var(--l);padding:.6rem;text-align:left;vertical-align:top}th{background:var(--s2)}details{border:1px solid var(--l);border-radius:8px;padding:.7rem 1rem;margin:.6rem 0}summary{font-weight:bold;cursor:pointer}footer{text-align:center;color:var(--m);padding:1rem}@media(max-width:800px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}nav div{columns:2}}@media(max-width:520px){nav div{columns:1}table{display:block;overflow:auto}}@media print{.layout{display:block}nav,.copy,.tabbar{display:none!important}.tabpanel[hidden]{display:block!important}.hero{print-color-adjust:exact;padding:1rem}article,.card{box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}section,pre,table{break-inside:avoid}}
+</style></head><body><header class="hero"><div class="eyebrow">Introduction to Kafka · Part 2 · Modül 3</div><h1>Şema Yönetimi ve Veri Sözleşmeleri</h1><p>Producer ve consumer farklı ekiplerce geliştirildiğinde JSON alan adlarının değişmesi dahi production hatasına dönüşebilir. Şemayı sürümleyip değişiklikleri uyumluluk kurallarıyla yöneteceğiz.</p></header><main><div class="layout"><nav><b>İçindekiler</b><div><a href="#hedef">Hedefler</a><a href="#formats">Formatlar ve registry</a><a href="#compat">Schema evolution</a><a href="#setup">Rancher Desktop kurulumu</a><a href="#spring">Spring Avro entegrasyonu</a><a href="#mistakes">Hatalar ve iyi uygulamalar</a><a href="#exercise">Mini alıştırma</a><a href="#quiz">Özet ve quiz</a></div></nav><article>
+<section><h2>Sürümler, kapsam ve ön koşullar</h2><p>4 Ekim 2026 doğrulaması: Kafka <strong>4.3.1</strong>; Spring Boot/Spring Kafka <strong>4.1.1</strong>; Confluent Platform Quick Start'taki image tag <strong>8.3.2</strong> (bu release train Kafka 4.3.x ile uyumludur); JDK 21 LTS. Registry image için Apache Kafka 00 compose ile birlikte CP <code>8.3.2</code> Schema Registry örneği kullanılacaktır. Confluent image'larının lisans/redistribution şartlarını, kurumsal policy'yi ve güncel patch sürümünü indirmeden önce kontrol edin. Kaynaklar: <a href="https://docs.confluent.io/platform/current/installation/versions-interoperability.html">Confluent compatibility</a>, <a href="https://docs.confluent.io/platform/current/schema-registry/index.html">Schema Registry docs</a>, <a href="https://github.com/confluentinc/schema-registry/tags">Registry tags</a>.</p><p>Ön koşul: 00 kurulum, Kafka broker çalışıyor. Bu dokümandaki Schema Registry ayrı bir servistir; Apache Kafka broker'ın içine dahil değildir.</p></section>
+<section id="hedef"><h2>Öğrenme hedefleri ve ön koşullar</h2><div class="grid"><div class="card"><h3>Hedefler</h3><ul><li>Avro, Protobuf ve JSON Schema trade-off'larını kıyaslamak.</li><li>Registry, serializer ve consumer deserializer iş bölümünü açıklamak.</li><li>Backward/forward/full compatibility ve schema evolution uygulamak.</li><li>Spring producer/consumer'ı Avro ile bağlamak.</li></ul></div><div class="card"><h3>Ön koşullar</h3><ul><li>Docker Compose (Rancher Desktop dockerd).</li><li>Kafka 4.x, Java/Spring Kafka temelleri.</li><li>Schema değişikliğinde consumer-first/producer-first deployment farkı.</li></ul></div></div></section>
+<section id="formats"><h2>1. Neden schema registry; nasıl çalışır?</h2><p>Registry schema'yı merkezi kaydeder, subject/version yönetir ve yeni schema'nın compatibility policy'sini doğrular. Producer serializer schema'yı kaydedip mesajda schema ID taşır; consumer deserializer ID ile schema'yı alıp payload'ı çözer. Registry broker değildir, event payload'larını saklamaz; Kafka record key/value byte'larını saklar.</p><table><tr><th>Format</th><th>Avantaj</th><th>Dikkat</th></tr><tr><td>Avro</td><td>Compact binary; schema-first ve code generation güçlü.</td><td>Defaults/union/evolution kurallarını doğru modelleyin; raw bytes console çıktısı okunmaz.</td></tr><tr><td>Protobuf</td><td>Binary, güçlü code generation, tag number ile evolution.</td><td>Field number silinince re-use etmeyin; reserved num/name kullanın.</td></tr><tr><td>JSON Schema</td><td>İnsan tarafından okunabilir JSON ve yaygın ekosistem.</td><td>Payload daha büyük; schema dialect ve optional/default/union yorumları değişebilir.</td></tr></table><p>Subject naming strategy kritik: varsayılan <code>TopicNameStrategy</code> genellikle topic-value subject'i kullanır; record bazlı paylaşımda <code>RecordNameStrategy</code> gerekebilir. Producer ve consumer aynı subject stratejisinde anlaşmalıdır.</p></section>
+<section id="compat"><h2>2. Schema evolution: backward/forward/full</h2><p>“Uyumluluk” deploy sırasındaki eski/yeni producer ve consumer kombinasyonunun okuyup işleyebilmesidir. Formatın syntactic validity'si tek başına business compatibility değildir.</p><table><tr><th>Policy</th><th>Yeni reader ile eski data?</th><th>Eski reader ile yeni data?</th><th>Örnek rollout</th></tr><tr><td>Backward</td><td>Evet (yeni reader eski writer)</td><td>Garanti değil</td><td>Consumer'ları yeni sürüme geçirin, ardından yeni producer.</td></tr><tr><td>Forward</td><td>Garanti değil</td><td>Evet (eski reader yeni writer)</td><td>Producer önce yeni alanı yazar; eski consumer toleranslı kalır.</td></tr><tr><td>Full</td><td>Evet</td><td>Evet</td><td>İki yönde uyumluluk gereken gradual rollout.</td></tr></table><p>Registry compatibility kontrolü schema resolution kurallarına göre yapılır; semantic meaning (ör. kuruş → lira) doğrulayamaz. Safe değişiklik örnekleri format ve policy'ye göre farklıdır: Avro'da yeni field'a default eklemek çoğunlukla backward-safe; Protobuf'ta field number'ı korumak gerekir. Required field ekleme, rename, enum removal, unit/meaning change kırılma yaratabilir.</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>Invoke-RestMethod http://localhost:8081/config/orders-value
+Invoke-RestMethod http://localhost:8081/subjects/orders-value/versions
+$payload = '{"compatibility":"BACKWARD"}'
+Invoke-RestMethod -Method Put -Uri http://localhost:8081/config/orders-value -ContentType "application/vnd.schemaregistry.v1+json" -Body $payload</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>curl -s http://localhost:8081/config/orders-value
+curl -s http://localhost:8081/subjects/orders-value/versions
+curl -X PUT -H 'Content-Type: application/vnd.schemaregistry.v1+json' --data '{"compatibility":"BACKWARD"}' http://localhost:8081/config/orders-value</code></pre></div></div><p>Beklenen: config JSON veya version listesi, örneğin <code>[1,2]</code>. Compatibility mode'u production subject'larında gelişigüzel değiştirmeyin; global ve subject-level override etkisini kontrol edin.</p></section>
+<section id="setup"><h2>3. Rancher Desktop'ta Schema Registry'yi çalıştırma</h2><p>İki OS'ta adımlar aynı: 00'da kullandığınız <code>docker-compose.yml</code> klasörüne geçin ve broker'ı çalışır bırakın. Dosyanın <code>services:</code> altına <code>schema-registry</code> servisini ekleyin. <code>volumes:</code> bölümünü değiştirmeyin.</p><pre><code>  schema-registry:
+    image: confluentinc/cp-schema-registry:8.3.2
+    container_name: kafka-schema-registry
+    depends_on:
+      - broker
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1</code></pre><p>Windows PowerShell ve macOS zsh için çalışma/başlatma komutları:</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>Set-Location "$HOME\kafka-lab"
+docker compose config
+docker compose up -d schema-registry
+docker compose logs -f schema-registry</code></pre><p>Ctrl+C yalnızca log takibini keser.</p></div><div class="tabpanel" role="tabpanel" hidden><pre><code>cd "$HOME/kafka-lab"
+docker compose config
+docker compose up -d schema-registry
+docker compose logs -f schema-registry</code></pre><p>Ctrl+C yalnızca log takibini keser.</p></div></div><p>Registry bir metadata topic'i olan <code>_schemas</code>'ı Kafka'ya yazar; tek broker lab nedeniyle replication factor 1 olarak ayarlanır. <code>depends_on</code> yalnızca container start sırasını etkiler, servisin hazır olduğunu garanti etmez. Loglarda HTTP listener hazır olana kadar bekleyin.</p><h3>API hazır mı?</h3><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>Invoke-RestMethod http://localhost:8081/subjects</code></pre><p>İlk kullanımda boş subject listesi beklenir.</p></div><div class="tabpanel" role="tabpanel" hidden><pre><code>curl -i http://localhost:8081/subjects</code></pre><p>HTTP 200 ve boş liste <code>[]</code> beklenir.</p></div></div><div class="callout warn"><strong>Lab güvenliği:</strong> Bu config HTTP/PLAINTEXT ve auth'suzdur. Yalnızca local eğitim ağı için. Üretimde TLS, authentication, ACL/network policy, registry persistence/HA, secret yönetimi ve audited schema changes gerekir.</div></section>
+<section id="spring"><h2>4. Spring Kafka + Avro serializer</h2><p>Avro class'ları <code>.avsc</code> schema'dan build sırasında generate edilir veya GenericRecord kullanılır. Aşağıdaki dependencies için Confluent Maven repository ve version alignment gerekir; Boot dependency management Spring Kafka'yı yönetir, Confluent serializer kendi BOM/version'ıyla uyumlu olmalıdır.</p><h3>Maven</h3><p>Confluent artifact'ları için Maven repository tanımı gerekebilir (kurum içi artifact mirror kullanıyorsanız mirror'ı tercih edin):</p><pre><code>&lt;repositories&gt;
+  &lt;repository&gt;
+    &lt;id&gt;confluent&lt;/id&gt;
+    &lt;url&gt;https://packages.confluent.io/maven/&lt;/url&gt;
+  &lt;/repository&gt;
+&lt;/repositories&gt;
+
+&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.kafka&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-kafka&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;io.confluent&lt;/groupId&gt;
+  &lt;artifactId&gt;kafka-avro-serializer&lt;/artifactId&gt;
+  &lt;version&gt;8.3.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.apache.avro&lt;/groupId&gt;
+  &lt;artifactId&gt;avro&lt;/artifactId&gt;
+  &lt;version&gt;1.12.0&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;build&gt;
+  &lt;plugins&gt;
+    &lt;plugin&gt;
+      &lt;groupId&gt;org.apache.avro&lt;/groupId&gt;
+      &lt;artifactId&gt;avro-maven-plugin&lt;/artifactId&gt;
+      &lt;version&gt;1.12.0&lt;/version&gt;
+      &lt;executions&gt;
+        &lt;execution&gt;
+          &lt;phase&gt;generate-sources&lt;/phase&gt;
+          &lt;goals&gt;&lt;goal&gt;schema&lt;/goal&gt;&lt;/goals&gt;
+        &lt;/execution&gt;
+      &lt;/executions&gt;
+    &lt;/plugin&gt;
+  &lt;/plugins&gt;
+&lt;/build&gt;</code></pre><p>Confluent Maven repository istenebilir; dependency resolution kurum mirror'unda başarısızsa repository'yi kontrollü ekleyin ve version compatibility resmi Confluent release matrix ile doğrulayın. Avro library versiyonunu Confluent serializer ile bağımsızca yükseltmeyin. Schema dosyasını <code>src/main/avro/OrderCreated.avsc</code> altında tutun; Avro Maven plugin bu varsayılan konumdan Java tipi üretir.</p><h3>Avro schema dosyası</h3><pre><code>{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.example.orders",
+  "fields": [
+    {"name": "orderId", "type": "string"},
+    {"name": "amountCents", "type": "long"},
+    {"name": "currency", "type": "string"}
+  ]
+}</code></pre><h3>application.yml</h3><pre><code>spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    properties:
+      schema.registry.url: http://localhost:8081
+      specific.avro.reader: true
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+    consumer:
+      group-id: order-avro-reader
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer</code></pre><p><code>specific.avro.reader=true</code> generated SpecificRecord class gerektirir. GenericRecord tüketiyorsanız ayarı kaldırın. Production Registry URL/auth/TLS secret'larını source control'e yazmayın.</p><h3>Record oluşturup gönderme (generated class varsayımı)</h3><pre><code>@Service
+public class AvroOrderPublisher {
+    private final KafkaTemplate&lt;String, OrderCreated&gt; template;
+
+    public AvroOrderPublisher(KafkaTemplate&lt;String, OrderCreated&gt; template) {
+        this.template = template;
+    }
+
+    public CompletableFuture&lt;SendResult&lt;String, OrderCreated&gt;&gt; send(
+            String orderId, long amountCents) {
+        var event = OrderCreated.newBuilder()
+                .setOrderId(orderId)
+                .setAmountCents(amountCents)
+                .setCurrency("TRY")
+                .build();
+        return template.send("orders.avro", orderId, event);
+    }
+}</code></pre><p>Generated Avro Java class build plugin'in package/name alanlarına göre üretilir; schema formatını API contract olarak review edin. Key orderId; Avro value registry serializer üzerinden serialize olur. Future failure'ını log/metric ile görünür yapın.</p><h3>CLI ile schema doğrulama ve gözlem</h3><p>Örnek Avro schema'yı Registry'ye kaydedip subjects listesini kontrol edin. Windows PowerShell'de schema dosyasından request body oluşturun:</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>$schema = Get-Content .\src\main\avro\OrderCreated.avsc -Raw | ConvertTo-Json -Compress
+$body = @{ schema = $schema; schemaType = "AVRO" } | ConvertTo-Json -Compress
+Invoke-RestMethod -Method Post -Uri http://localhost:8081/subjects/orders.avro-value/versions -ContentType "application/vnd.schemaregistry.v1+json" -Body $body
+Invoke-RestMethod http://localhost:8081/subjects</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>curl -i -X POST http://localhost:8081/subjects/orders.avro-value/versions -H 'Content-Type: application/vnd.schemaregistry.v1+json' --data '{"schema":"{\"type\":\"record\",\"name\":\"OrderCreated\",\"namespace\":\"com.example.orders\",\"fields\":[{\"name\":\"orderId\",\"type\":\"string\"},{\"name\":\"amountCents\",\"type\":\"long\"},{\"name\":\"currency\",\"type\":\"string\"}]}","schemaType":"AVRO"}'
+curl -s http://localhost:8081/subjects</code></pre></div></div><p>Başarılı kayıt yanıtı schema <code>id</code> döndürür; subject listesinde <code>orders.avro-value</code> görünmelidir. Ardından topic'e event'i Spring producer ile yayınlayıp Kafka topic'i kontrol edin. Avro wire payload console consumer'da okunabilir JSON görünmek zorunda değildir.</p><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker exec kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.avro --from-beginning --property print.key=true</code></pre><p>Beklenen: Registry'de <code>orders.avro-value</code> (default TopicNameStrategy) gibi subject; Kafka CLI'de topic ve serialized bytes. Gerçek payload decode etmek için serializer-aware Spring consumer veya registry destekli CLI kullanın.</p></section>
+<section id="mistakes"><h2>Sık yapılan hatalar ve iyi uygulamalar</h2><ul><li>Schema Registry'yi broker zannetmek; Registry unavailable olunca serializer config/cache davranışı ayrıca değerlendirilmelidir.</li><li>Uyumluluk ayarı schema syntax'ını kontrol ediyor sanmak; business semantic değişikliklerini ekip review/test etmelidir.</li><li>Breaking change'i tüm consumer'lar deploy olmadan yayınlamak.</li><li>Avro default alanının “producer için otomatik değer” olduğunu sanmak: reader/writer schema resolution bağlamında anlamı vardır.</li><li>Protobuf field number'ını yeniden kullanmak veya Avro field rename'i alias/default stratejisi olmadan yapmak.</li><li>Subject naming strategy'yi servisler arasında farklı ayarlamak; topic-level schema lifecycle sahipliği belirsiz bırakmak.</li><li>Schema içinden gereksiz PII'yi uzun süreli Kafka retention'a taşımak.</li><li>Kafka console consumer ile Avro bytes'ı JSON gibi okumaya çalışmak.</li></ul><p>Öneri: contract tests, consumer-driven compatibility checks, staged rollout, schema owner, deprecation window, event example fixtures ve registry audit süreçleri.</p></section>
+<section id="exercise"><h2>Mini alıştırma</h2><ol><li><code>OrderCreated</code> Avro schema'ya optional <code>couponCode</code> alanı ekleyin. Eski data'yı yeni reader okurken gereken default/union davranışını belirleyin.</li><li><code>amountCents</code>'i decimal string'e çevirmeyi breaking change olarak değerlendirin; migration/versioning planı önerin.</li><li>REST API ile subject compatibility ayarını okuyup bir schema version'ı listeleyin.</li><li>Spring producer ile bir record gönderip Registry subject'i ve Kafka topic'i gözlemleyin.</li></ol><p><strong>Kontrol noktası:</strong> Yeni consumer eski message'i okuyabiliyor mu ve eski consumer yeni message'i okuyabiliyor mu? Bu iki sorunun cevabı compatibility yönünü belirler.</p></section>
+<section id="quiz"><h2>Kısa özet</h2><ul><li>Registry schema metadata/compatibility sağlar; event bytes Kafka'dadır.</li><li>Serializer schema ID ile wire format'ı üretir; consumer registry'den schema edinir.</li><li>Avro, Protobuf ve JSON Schema'nın evolution kuralları farklıdır.</li><li>Subject strategy, version compatibility ve rollout sırası API sözleşmesinin parçasıdır.</li></ul><h2>Kendini değerlendir</h2><details><summary>1. Schema Registry event payload'larını saklar mı?</summary><p>Hayır; schema ve versiyon metadata'sını saklar, payload Kafka'da tutulur.</p></details><details><summary>2. Backward compatibility hangi yönü hedefler?</summary><p>Yeni reader'ın eski writer schema ile yazılmış data'yı okuyabilmesini.</p></details><details><summary>3. Protobuf field number neden korunmalı?</summary><p>Wire compatibility için numara alan kimliğidir; silinen numara yeniden kullanılırsa yanlış decode riski oluşabilir.</p></details><details><summary>4. Console consumer Avro payload'ı neden okunur JSON göstermeyebilir?</summary><p>Avro wire format binary data ve schema ID içerir; registry-aware deserializer gerekir.</p></details><details><summary>5. Registry availability neden producer başarısını etkileyebilir?</summary><p>Schema serializer ilk/ilgili schema için registry'ye erişmek zorunda kalabilir; cache ve failure davranışı serializer config'e bağlıdır.</p></details></section>
+</article></div></main><footer>Introduction to Kafka · 04 Şema Yönetimi ve Veri Sözleşmeleri</footer><script>
+document.querySelectorAll("[data-tabs]").forEach((g,n)=>{let b=[...g.querySelectorAll('[role=tab]')],p=[...g.querySelectorAll('[role=tabpanel]')];function s(i){b.forEach((x,j)=>{x.setAttribute("aria-selected",String(i===j));x.tabIndex=i===j?0:-1;p[j].hidden=i!==j})}b.forEach((x,i)=>{x.id=`t${n}b${i}`;x.setAttribute("aria-controls",`t${n}p${i}`);p[i].id=`t${n}p${i}`;p[i].setAttribute("aria-labelledby",x.id);x.onclick=()=>s(i)});s(0)});document.querySelectorAll("pre").forEach(x=>{let b=document.createElement("button");b.className="copy";b.textContent="Kopyala";b.onclick=async()=>{try{await navigator.clipboard.writeText(x.querySelector("code")?.innerText||x.innerText);b.textContent="Kopyalandı"}catch{b.textContent="Kopyalama başarısız"}setTimeout(()=>b.textContent="Kopyala",1600)};x.append(b)});
+</script></body></html>

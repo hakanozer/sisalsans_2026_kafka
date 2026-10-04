@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>00 · Yerel Laboratuvar Ortamının Kurulumu | Introduction to Kafka</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f6fa; --surface: #fff; --surface-2: #edf1f7; --text: #172033;
+      --muted: #526078; --line: #d6deea; --accent: #3157c8; --accent-soft: #e7edff;
+      --good: #137547; --warn: #805400; --code: #111827; --code-text: #e7edf7;
+      --shadow: 0 8px 28px rgb(19 35 65 / 8%);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #10141d; --surface: #191f2b; --surface-2: #222b3a; --text: #edf2fa;
+        --muted: #b2bfd2; --line: #354155; --accent: #9db4ff; --accent-soft: #283858;
+        --good: #83d9a9; --warn: #f2ca76; --code: #0b0f16; --code-text: #e7edf7;
+        --shadow: 0 8px 28px rgb(0 0 0 / 18%);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: var(--accent); }
+    .hero { padding: 3.5rem max(1rem, calc((100% - 1120px) / 2)); color: #fff; background: linear-gradient(120deg, #172b57, #3157c8 68%, #5675d8); }
+    .hero p { max-width: 850px; margin: .7rem 0 0; color: #e0e8ff; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 750; color: #c5d3ff; }
+    h1 { margin: .4rem 0; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.12; }
+    main { width: min(1120px, calc(100% - 2rem)); margin: 1.6rem auto 4rem; }
+    .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+    nav, article, .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+    nav { padding: 1rem; position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; }
+    nav strong { display: block; margin: 0 0 .45rem; }
+    nav a { display: block; padding: .25rem .4rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
+    nav a:hover, nav a:focus { color: var(--accent); background: var(--accent-soft); border-radius: 6px; }
+    article { padding: clamp(1rem, 3vw, 2rem); min-width: 0; }
+    section { margin: 0 0 2.5rem; }
+    h2 { margin: 0 0 .8rem; padding-bottom: .35rem; font-size: 1.55rem; border-bottom: 1px solid var(--line); }
+    h3 { margin: 1.35rem 0 .35rem; font-size: 1.12rem; }
+    p { margin: .55rem 0; }
+    ul, ol { padding-left: 1.4rem; }
+    li { margin: .28rem 0; }
+    .lead { color: var(--muted); font-size: 1.08rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .8rem; }
+    .card { padding: 1rem; box-shadow: none; }
+    .badge { display: inline-block; padding: .15rem .55rem; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-size: .8rem; font-weight: 700; }
+    .callout { margin: 1rem 0; padding: .85rem 1rem; border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+    .callout.warn { border-color: var(--warn); }
+    .callout.good { border-color: var(--good); }
+    .tabs { margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .tabbar { display: flex; gap: .3rem; padding: .45rem; background: var(--surface-2); }
+    .tabbar button { border: 0; border-radius: 7px; padding: .55rem .9rem; background: transparent; color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+    .tabbar button[aria-selected="true"] { background: var(--surface); color: var(--accent); box-shadow: 0 1px 4px rgb(0 0 0 / 12%); }
+    .tabpanel { padding: 1rem; }
+    [hidden] { display: none !important; }
+    pre { position: relative; overflow: auto; padding: 1.1rem; padding-top: 2.6rem; margin: .75rem 0; border-radius: 10px; background: var(--code); color: var(--code-text); font: .88rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; tab-size: 2; }
+    pre code { white-space: pre; }
+    .copy { position: absolute; right: .5rem; top: .5rem; border: 1px solid #606b7b; border-radius: 6px; padding: .25rem .55rem; color: var(--code-text); background: #283244; cursor: pointer; font: .78rem system-ui, sans-serif; }
+    code:not(pre code) { padding: .08rem .28rem; border-radius: 4px; background: var(--surface-2); font: .92em ui-monospace, SFMono-Regular, Consolas, monospace; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .93rem; }
+    th, td { padding: .65rem; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--surface-2); }
+    .diagram { display: block; width: 100%; height: auto; margin: 1rem auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .checklist li::marker { color: var(--good); }
+    details { margin: .7rem 0; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+    summary { cursor: pointer; font-weight: 700; }
+    footer { padding: 1.5rem; text-align: center; color: var(--muted); }
+    @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } nav { position: static; max-height: none; } nav div { columns: 2; } }
+    @media (max-width: 520px) { .hero { padding-top: 2.4rem; padding-bottom: 2.4rem; } nav div { columns: 1; } table { display: block; overflow-x: auto; } }
+    @media print {
+      :root { color-scheme: light; --bg: #fff; --surface: #fff; --surface-2: #f2f2f2; --text: #111; --muted: #333; --line: #aaa; --code: #f3f3f3; --code-text: #111; }
+      body { background: #fff; font-size: 10pt; }
+      .hero { padding: 1.4rem; print-color-adjust: exact; }
+      main { width: 100%; margin: 0; }
+      .layout { display: block; }
+      nav, .copy, .tabbar { display: none !important; }
+      article, .card { box-shadow: none; }
+      .tabpanel[hidden] { display: block !important; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+      a { color: #111; text-decoration: underline; }
+      section, .card, pre, table { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Introduction to Kafka · Ortam laboratuvarı</div>
+    <h1>Yerel Laboratuvar Ortamının Kurulumu</h1>
+    <p>Rancher Desktop üzerinde tek düğümlü, KRaft tabanlı Apache Kafka kuracağız; ardından host makineden broker'a bağlanıp event üretip tüketeceğiz. Bu laboratuvar eğitim içindir, production topolojisi değildir.</p>
+  </header>
+  <main>
+    <div class="layout">
+      <nav aria-label="İçindekiler">
+        <strong>İçindekiler</strong>
+        <div>
+          <a href="#versiyonlar">Sürüm ve kaynaklar</a>
+          <a href="#hedef">Hedefler ve ön koşullar</a>
+          <a href="#jdk">JDK kurulumu</a>
+          <a href="#rancher">Rancher Desktop kurulumu</a>
+          <a href="#runtime">Container engine seçimi</a>
+          <a href="#compose">Kafka Compose dosyası</a>
+          <a href="#listeners">Host bağlantısı</a>
+          <a href="#dogrulama">Uçtan uca CLI testi</a>
+          <a href="#durdurma">Durdurma ve temizleme</a>
+          <a href="#sorun">Sorun giderme</a>
+          <a href="#alistirma">Mini alıştırma</a>
+          <a href="#ozdegerlendirme">Kendini değerlendir</a>
+        </div>
+      </nav>
+      <article>
+        <section id="versiyonlar">
+          <h2>Sürüm ve doğrulama notu</h2>
+          <p>Bu laboratuvar 4 Ekim 2026 tarihinde resmi proje kaynaklarından kontrol edilmiştir. İndirirken yayın sayfasında işletim sisteminize uygun en güncel kararlı yamayı tekrar kontrol edin; kurumsal ortamda onaylı sürüm politikanız varsa onu izleyin.</p>
+          <div class="grid">
+            <div class="card"><span class="badge">Runtime</span><p><strong>Rancher Desktop 1.24.0</strong><br>GitHub'daki son kararlı release olarak doğrulandı.</p></div>
+            <div class="card"><span class="badge">Broker</span><p><strong>Apache Kafka 4.3.1</strong><br>Downloads sayfasında desteklenen release; resmi <code>apache/kafka</code> imajı.</p></div>
+            <div class="card"><span class="badge">Java</span><p><strong>Eclipse Temurin JDK 21 LTS</strong><br>Kafka 4.3.1 için JDK 17+ yeterlidir. JDK 21, eğitimde Spring ile de kullanılabilecek LTS seçeneğidir. JDK 25 de Adoptium'da LTS olarak listelenmektedir.</p></div>
+          </div>
+          <p>Resmi doğrulama kaynakları:
+            <a href="https://github.com/rancher-sandbox/rancher-desktop/releases">Rancher Desktop releases</a>,
+            <a href="https://docs.rancherdesktop.io/getting-started/installation/">Rancher Desktop kurulum kılavuzu</a>,
+            <a href="https://kafka.apache.org/community/downloads/">Kafka Downloads</a>,
+            <a href="https://kafka.apache.org/quickstart">Kafka Quickstart</a>,
+            <a href="https://hub.docker.com/r/apache/kafka">Apache Kafka resmi imajı</a>,
+            <a href="https://adoptium.net/temurin/releases/">Temurin indirmeleri</a>.
+          </p>
+          <div class="callout warn"><strong>Üretim uyarısı:</strong> Aşağıdaki broker tek node, tek replica ve PLAINTEXT ile çalışır. Veri koruması, TLS, ACL, yedeklilik, yüksek erişilebilirlik ve üretim kapasite planlaması sağlamaz. Kurumsal veri veya hassas içerik göndermeyin.</div>
+        </section>
+
+        <section id="hedef">
+          <h2>Öğrenme hedefi ve ön koşullar</h2>
+          <div class="grid">
+            <div class="card"><h3>Öğrenme hedefi</h3><ul class="checklist"><li>Rancher Desktop'ı Docker uyumlu <code>dockerd (Moby)</code> ile hazırlamak.</li><li>KRaft modunda Apache Kafka'yı Compose ile başlatmak.</li><li><code>advertised.listeners</code> davranışını host ve container ağları bağlamında açıklamak.</li><li>Topic oluşturup event yazmak ve okumak.</li></ul></div>
+            <div class="card"><h3>Ön koşullar</h3><ul><li>Windows 11 veya güncel macOS (Rancher Desktop için destek koşullarını resmi sayfadan doğrulayın).</li><li>Sanallaştırma destekli CPU; Windows'ta WSL2.</li><li>İndirme için internet bağlantısı; container image indirmek için registry erişimi.</li><li>Öneri: en az 4 CPU core ve 8 GB RAM ayırabilen makine. Host işletim sistemi ve IDE için ayrıca bellek bırakın.</li></ul></div>
+          </div>
+        </section>
+
+        <section id="jdk">
+          <h2>1. JDK 21 kurulumu ve kontrolü</h2>
+          <p><strong>Neden?</strong> Kafka broker'ı bu laboratuvarda container içinde çalışır; ancak Spring Boot uygulamaları ve bazı yerel araçlar host JDK'sını kullanacaktır. JDK'nın kurulu ve <code>JAVA_HOME</code>'un tutarlı olması sonraki uygulama adımlarını kolaylaştırır.</p>
+          <p><strong>Nasıl?</strong> Eclipse Temurin'in resmi indirme sayfasından JDK 21 LTS paketini seçin. İşletim sisteminizin mimarisiyle eşleşen paketi indirin. Kurulum ekranı veya PATH tercihi sürüme göre değişebileceğinden dosya adını ezberlemeyin; release sayfasındaki güncel paketi kullanın.</p>
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="JDK işletim sistemi">
+              <button role="tab" aria-selected="true">Windows</button><button role="tab" aria-selected="false">macOS</button>
+            </div>
+            <div class="tabpanel" role="tabpanel">
+              <ol>
+                <li><a href="https://adoptium.net/temurin/releases/">Temurin releases</a> sayfasında Version <strong>21 - LTS</strong>, Operating System <strong>Windows</strong>, Architecture <strong>x64</strong> (ARM tabanlı Windows cihazda ARM64 paketi listeleniyorsa onu) ve Package Type <strong>JDK</strong> seçin; MSI indirip çalıştırın.</li>
+                <li>Kurulum sihirbazında <strong>Set JAVA_HOME variable</strong> ve <strong>Add to PATH</strong> seçenekleri görünüyorsa seçin. Seçenekler görünmüyorsa kurulum sonrası aşağıdaki komutla mevcut terminal oturumu için ayarlayın.</li>
+                <li>Yeni PowerShell açıp doğrulayın. Kalıcı ayarda kurulum klasörünün tam JDK dizinini Windows Environment Variables ekranında <code>JAVA_HOME</code> olarak tanımlayın ve <code>%JAVA_HOME%\bin</code>'i <code>Path</code>'e ekleyin.</li>
+              </ol>
+              <pre><code>$jdk = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory |
+  Where-Object Name -Like 'jdk-21*' |
+  Sort-Object Name -Descending |
+  Select-Object -First 1
+if (-not $jdk) { throw 'JDK 21 bulunamadı; kurulum klasörünü kontrol edin.' }
+$env:JAVA_HOME = $jdk.FullName
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+java -version
+Write-Output $env:JAVA_HOME</code></pre>
+              <p>Beklenen: Java sürüm çıktısında <code>21</code> görünür. Bu PowerShell atamaları yalnızca mevcut terminal içindir; kalıcılık için Windows Environment Variables arayüzünü kullanın.</p>
+            </div>
+            <div class="tabpanel" role="tabpanel" hidden>
+              <ol>
+                <li>Temurin releases sayfasında Version <strong>21 - LTS</strong>, Operating System <strong>macOS</strong> ve Package Type <strong>JDK</strong> seçin. Apple Silicon (M serisi) Mac için <strong>aarch64 / ARM64</strong>, Intel Mac için <strong>x64 / x86_64</strong> paketini indirin.</li>
+                <li>PKG kurulum paketini açıp ekrandaki yönergeleri izleyin. Mimariden emin değilseniz Apple menüsü → <strong>About This Mac</strong> ekranındaki Chip/Processor bilgisini kontrol edin.</li>
+                <li>Terminal (zsh) açıp Java'yı doğrulayın. Aşağıdaki <code>JAVA_HOME</code> tanımını <code>~/.zshrc</code> dosyasına ekleyerek yeni terminal oturumlarında da kullanın.</li>
+              </ol>
+              <pre><code>/usr/libexec/java_home -V
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
+echo 'export PATH="$JAVA_HOME/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+java -version
+echo "$JAVA_HOME"</code></pre>
+              <p>Beklenen: sürüm çıktısında <code>21</code> ve <code>JAVA_HOME</code> için Temurin JDK dizini görünür. Mac'te Apple Silicon ve Intel için aynı kullanım komutları geçerlidir; indirilen paket mimarisi farklıdır.</p>
+            </div>
+          </div>
+          <p><strong>Kontrol noktası:</strong> <code>java -version</code> JDK 21 (veya uyumlu başka bir JDK 17+) göstermeli. JRE değil, JDK kurduğunuzu doğrulayın.</p>
+        </section>
+
+        <section id="rancher">
+          <h2>2. Rancher Desktop kurulumu ve ilk açılış ayarları</h2>
+          <p><strong>Neden?</strong> Rancher Desktop, yerel makinede konteyner motoru ve isteğe bağlı Kubernetes sağlar. Biz yalnızca tek Kafka container'ı çalıştıracağımız için Kubernetes'i kapalı tutarak kaynak kullanımını azaltacağız.</p>
+          <p><strong>Nasıl?</strong> Her iki sistem için de Rancher Desktop'ın resmi GitHub release sayfasındaki güncel kararlı sürümü indirin. İlk açılış sihirbazındaki ekran adları sürüme göre değişebilir; seçimlerin hedefini aşağıdaki sırayla izleyin.</p>
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="Rancher Desktop kurulum işletim sistemi">
+              <button role="tab" aria-selected="true">Windows</button><button role="tab" aria-selected="false">macOS</button>
+            </div>
+            <div class="tabpanel" role="tabpanel">
+              <ol>
+                <li>Önce WSL2 gereksinimini kontrol edin. Eksikse yönetici yetkili PowerShell'de <code>wsl --install</code> çalıştırın, istenirse bilgisayarı yeniden başlatın. Kurum cihazında bu adım BT yöneticisi gerektirebilir.</li>
+                <li>PowerShell'de <code>wsl --status</code> ve <code>wsl --version</code> çalıştırarak WSL kurulumunu kontrol edin. WSL2 etkin olmalı; firmware/BIOS sanallaştırmasının etkin ve Windows özelliklerinin güncel olması gerekir.</li>
+                <li>Release sayfasından <code>Rancher.Desktop.Setup.X.Y.Z.msi</code> dosyasını indirin ve açın. Lisans koşullarını kabul edin. Ekran sunarsa kurulum kapsamını seçin; mümkün olduğunda <strong>Install for everyone</strong>, ayrıcalıklı servis kurulumu ve yerel servislerin loopback dışından açılabilmesi için uygundur. Kurumsal yetkiler izin vermiyorsa kullanıcı bazlı kurulumla devam edin; laboratuvarda <code>localhost</code> bağlantısı yeterlidir.</li>
+                <li>Start menüsünden Rancher Desktop'ı açın. İlk başlatmada Kubernetes/container image indirmesi zaman alabilir.</li>
+                <li>İlk kurulum veya Preferences ekranında Container Engine olarak <strong>dockerd (Moby)</strong> seçin. Docker Compose ve <code>docker</code> CLI kullanacağımız için bu en doğrudan seçenektir.</li>
+                <li>Kubernetes ekranında <strong>Enable Kubernetes</strong> seçimini kapalı bırakın. Değişiklik uygulaması için Restart isterse onaylayın.</li>
+                <li>Virtual Machine / Resources ekranında yaklaşık <strong>4 CPU</strong> ve <strong>8 GB RAM</strong> ayırın; bu kaynağı bulamıyorsanız 2 CPU / 4 GB ile yalnızca Kafka testini deneyip diğer uygulamalar kapalıyken çalışın. Host'a işletim sistemi ve IntelliJ için RAM bırakın.</li>
+                <li>Rancher Desktop durum göstergesi hazır olana kadar bekleyin. System tray menüsünden veya uygulama ana ekranından engine'in <strong>Running</strong> olduğunu kontrol edin.</li>
+              </ol>
+              <pre><code>wsl --status
+wsl --version
+docker version
+docker compose version
+docker info</code></pre>
+              <p>Beklenen: Docker Client ve Server bilgileri, Compose v2 sürümü ve Server bölümünde Rancher Desktop/Moby görünür. <code>docker info</code> server'a bağlanamıyorsa Compose adımına geçmeyin.</p>
+            </div>
+            <div class="tabpanel" role="tabpanel" hidden>
+              <ol>
+                <li>Rancher Desktop için desteklenen macOS sürümünü resmi gereksinim sayfasından doğrulayın. Apple Silicon (M serisi, <code>aarch64</code>) ve Intel (<code>x86_64</code>) Mac için uyumlu installer seçeneğini release sayfasından indirin.</li>
+                <li>GitHub release sayfasından <code>Rancher.Desktop-X.Y.Z.dmg</code> dosyasını indirin. DMG'yi açıp Rancher Desktop simgesini <strong>Applications</strong> klasörüne sürükleyin; Applications içinden başlatın.</li>
+                <li>macOS ilk açılışta indirilen uygulama için onay isteyebilir; sistem güvenlik ekranındaki yönergeleri izleyin.</li>
+                <li>İlk kurulum veya Preferences ekranında Container Engine olarak <strong>dockerd (Moby)</strong> seçin. Böylece eğitim komutlarını <code>docker compose</code> ile çalıştırabiliriz.</li>
+                <li>Kubernetes ekranında <strong>Enable Kubernetes</strong> seçimini kapalı tutun. Değişiklik için Restart istenirse onaylayın.</li>
+                <li>Virtual Machine / Resources ekranında yaklaşık <strong>4 CPU</strong> ve <strong>8 GB RAM</strong> ayırın. Daha düşük donanımda 2 CPU / 4 GB ile başlayın; IntelliJ ve diğer ağır uygulamaları kapatmanız gerekebilir. Kaynak değerleri ana bilgisayardaki toplam RAM'den yüksek olmamalıdır.</li>
+                <li>Virtual Machine ayarlarında sanallaştırma motoru seçenekleri sunulursa uygulamanın önerdiği varsayılanı seçin. M serisi ve Intel host'larda seçenekler farklı olabilir; Rancher Desktop sürümünün desteklemediği bir motoru zorlamayın. Değişiklik sonrası uygulamayı yeniden başlatın.</li>
+                <li>Uygulama durumunun hazır/Running olduğunu bekleyin.</li>
+              </ol>
+              <pre><code>docker version
+docker compose version
+docker info
+uname -m
+/usr/libexec/java_home -V</code></pre>
+              <p>Beklenen: Docker Client/Server, Compose v2 ve Rancher Desktop server bilgileri. <code>uname -m</code> Apple Silicon'da genellikle <code>arm64</code>, Intel'de <code>x86_64</code> gösterir.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="runtime">
+          <h2>3. Container engine: dockerd (Moby) mi, containerd mi?</h2>
+          <div class="grid">
+            <div class="card"><h3>dockerd (Moby)</h3><p>Docker Engine API'sini ve <code>docker</code> CLI'yi sağlar. Pek çok Spring Boot geliştirme akışı ve Docker Compose örneğiyle doğrudan uyumludur. Bu eğitimde <strong>bunu seçiyoruz</strong>.</p></div>
+            <div class="card"><h3>containerd</h3><p>Kubernetes ekosisteminde kullanılan container runtime'dır. Rancher Desktop, bunun yanında <code>nerdctl</code> CLI sunar. Docker CLI/Compose bekleyen araçlarla ek uyarlama gerekir. Docker engine ile aynı şey değildir.</p></div>
+          </div>
+          <p>Kubernetes, container runtime değildir; container'ları yöneten ayrı bir orkestrasyon katmanıdır. Kafka'yı burada Docker Compose ile çalıştıracağımız için Kubernetes'i etkinleştirmek gerekmiyor.</p>
+          <p>Runtime'ı containerd seçtiyseniz ve <code>nerdctl</code> kuruluysa, kontrol için:</p>
+          <pre><code>nerdctl version
+nerdctl info
+nerdctl compose version</code></pre>
+          <p>Containerd seçeneğinde bu dokümandaki Compose komutlarını <code>nerdctl compose</code> ile çalıştırmayı deneyebilirsiniz. Ancak bu eğitimde verilen varsayılan yol ve kontroller <code>dockerd (Moby)</code> + <code>docker compose</code> içindir. Komut bulunamazsa container engine ayarını dockerd'e alıp Rancher Desktop'ı yeniden başlatın.</p>
+          <div class="callout"><strong>Kurulum doğrulama:</strong> Hata almadan <code>docker version</code>, <code>docker compose version</code> ve <code>docker info</code> çalışmadan Kafka'yı başlatmayın. İlk image indirme işlemi registry erişimi nedeniyle zaman alabilir.</div>
+        </section>
+
+        <section id="compose">
+          <h2>4. Kafka'yı KRaft modunda Docker Compose ile başlatma</h2>
+          <p><strong>Neden?</strong> Kafka 4.x laboratuvarında ZooKeeper kullanmadan KRaft metadata yönetimini göreceğiz. Tek broker/controller container'ı kurulumu kolaylaştırır; fakat yedeklilik sağlamaz.</p>
+          <p><strong>Nasıl?</strong> Aşağıdaki dosyayı <code>docker-compose.yml</code> adıyla yeni bir klasöre kaydedin. İmaj sürümü sabitlenmiştir; Compose dosyasını çalıştırdığınız dizin proje dizini olacaktır.</p>
+          <h3>Dosyayı oluşturma</h3>
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="Compose dosyası oluşturma">
+              <button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button>
+            </div>
+            <div class="tabpanel" role="tabpanel">
+              <p>PowerShell'de çalışma klasörünü oluşturup içine geçin. Sonraki komut, bir sonraki bölümdeki YAML içeriğini <code>docker-compose.yml</code> olarak kaydeder.</p>
+              <pre><code>New-Item -ItemType Directory -Force -Path "$HOME\kafka-lab" | Out-Null
+Set-Location "$HOME\kafka-lab"</code></pre>
+            </div>
+            <div class="tabpanel" role="tabpanel" hidden>
+              <p>Terminal'de çalışma klasörünü oluşturup içine geçin. Sonraki adımda YAML içeriğini <code>docker-compose.yml</code> dosyasına kaydedin.</p>
+              <pre><code>mkdir -p "$HOME/kafka-lab"
+cd "$HOME/kafka-lab"</code></pre>
+            </div>
+          </div>
+          <p>Bu tam Compose içeriğini dosyaya kaydedin:</p>
+          <pre><code>services:
+  broker:
+    image: apache/kafka:4.3.1
+    hostname: broker
+    container_name: kafka-lab
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT_HOST://localhost:9092,PLAINTEXT://broker:19092"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@broker:29093"
+      KAFKA_LISTENERS: "CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
+volumes:
+  kafka-data:</code></pre>
+          <p>Windows PowerShell'de dosya yazmanın pratik yolu:</p>
+          <pre><code>@'
+services:
+  broker:
+    image: apache/kafka:4.3.1
+    hostname: broker
+    container_name: kafka-lab
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT_HOST://localhost:9092,PLAINTEXT://broker:19092"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@broker:29093"
+      KAFKA_LISTENERS: "CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
+volumes:
+  kafka-data:
+'@ | Set-Content -Encoding utf8 docker-compose.yml</code></pre>
+          <p>macOS Terminal (zsh) dosya oluşturma komutu:</p>
+          <pre><code>cat &gt; docker-compose.yml &lt;&lt;'YAML'
+services:
+  broker:
+    image: apache/kafka:4.3.1
+    hostname: broker
+    container_name: kafka-lab
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT_HOST://localhost:9092,PLAINTEXT://broker:19092"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@broker:29093"
+      KAFKA_LISTENERS: "CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
+volumes:
+  kafka-data:
+YAML</code></pre>
+          <h3>Compose satırları ne işe yarar?</h3>
+          <table>
+            <thead><tr><th>Ayar</th><th>Açıklama</th></tr></thead>
+            <tbody>
+              <tr><td><code>image</code></td><td>Apache'nin resmi JVM tabanlı Kafka imajını sabit <code>4.3.1</code> sürümüyle seçer; eğitim sırasında etiketi <code>latest</code> yapmamak sürüm değişimini önler.</td></tr>
+              <tr><td><code>hostname</code> / <code>container_name</code></td><td>Container network içi servis adını <code>broker</code>, katılımcının yönetim komutlarındaki adını <code>kafka-lab</code> yapar.</td></tr>
+              <tr><td><code>KAFKA_PROCESS_ROLES</code></td><td>Tek düğüm hem broker hem controller rollerini taşır (KRaft combined mode); ayrı ZooKeeper yoktur.</td></tr>
+              <tr><td><code>KAFKA_NODE_ID</code>, <code>CLUSTER_ID</code>, <code>KAFKA_CONTROLLER_QUORUM_VOTERS</code></td><td>Node ve KRaft cluster kimliğini ve controller quorum üyesini tanımlar. Cluster ID bu laboratuvar içindir; aynı data volume üzerinde değiştirilmemelidir.</td></tr>
+              <tr><td><code>KAFKA_LISTENERS</code></td><td>Broker'ın hangi arayüz/portlarda dinlediğini tanımlar: controller <code>29093</code>, container ağı <code>19092</code>, host istemcisi <code>9092</code>.</td></tr>
+              <tr><td><code>KAFKA_ADVERTISED_LISTENERS</code></td><td>İlk bağlantıdan sonra istemcilere broker için döndürülecek erişilebilir adresleri bildirir. Host istemcisi <code>localhost:9092</code>, Compose ağı içindeki istemci <code>broker:19092</code> alır.</td></tr>
+              <tr><td><code>KAFKA_LISTENER_SECURITY_PROTOCOL_MAP</code></td><td>Listener adlarını protokolle eşleştirir. Bu eğitimde hepsi <code>PLAINTEXT</code>; production için TLS ve uygun authentication gerekir.</td></tr>
+              <tr><td>Tek replica ayarları</td><td>Offsets ve transaction state internal topic'lerinin replication değerlerini 1'e indirir. Bu sadece tek broker lab içindir; production'da varsayılan/kurumsal dayanıklılık politikası kullanılmalıdır.</td></tr>
+              <tr><td><code>ports</code></td><td>Host'un <code>localhost:9092</code> portunu container'ın <code>9092</code> portuna yayınlar. Container içi <code>19092</code> ve controller <code>29093</code> host'a açılmaz.</td></tr>
+              <tr><td><code>volumes</code> / <code>KAFKA_LOG_DIRS</code></td><td>Kafka log ve KRaft metadata verisini yönetilen <code>kafka-data</code> volume'unda tutar; container silinse de <code>compose down</code> ile veri kalır.</td></tr>
+              <tr><td><code>restart</code></td><td>Runtime çalışırken process durursa container'ın tekrar başlatılmasını ister.</td></tr>
+            </tbody>
+          </table>
+          <h3>Kafka'yı başlatın</h3>
+          <p>Aşağıdaki komutlar Windows PowerShell ve macOS zsh'de aynıdır; komutları Compose dosyasının bulunduğu klasörden çalıştırın.</p>
+          <pre><code>docker compose config
+docker compose up -d
+docker compose ps
+docker compose logs -f broker</code></pre>
+          <p><code>docker compose config</code> dosyayı doğrular ve normalize edilmiş konfigürasyonu yazar. <code>logs -f</code> akışından çıkmak için <kbd>Ctrl+C</kbd> basın; bu yalnızca log takibini durdurur, container'ı durdurmaz.</p>
+          <div class="callout good"><strong>Kontrol noktası:</strong> <code>docker compose ps</code> tablosunda <code>kafka-lab</code> için <code>Up</code> görmelisiniz. Loglarda Kafka server started / Kafka version 4.3.1 benzeri başlangıç bilgisi olmalı; formatı sürüme göre değişebilir.</div>
+        </section>
+
+        <section id="listeners">
+          <h2>5. Host makineden Kafka'ya bağlantı: listener ve advertised listener</h2>
+          <p><strong>Neden?</strong> Kafka istemcisi bootstrap adresine ilk bağlantıyı kurduktan sonra broker metadata'sını alır ve broker'ın ilan ettiği adrese tekrar bağlanır. Container içindeki DNS adı host işletim sisteminde çözümlenmeyebilir; yanlış advertised adresi, başlangıç bağlantısı kurulsa bile istemciyi koparabilir.</p>
+          <p><strong>Nasıl?</strong> Bu Compose yapılandırmasında dış uygulama ve terminal araçları <code>localhost:9092</code> ile erişir. Compose ağındaki diğer container'lar <code>broker:19092</code> kullanmalıdır. KRaft controller trafiği <code>29093</code>'te kalır.</p>
+          <svg class="diagram" viewBox="0 0 900 350" role="img" aria-labelledby="svg-title svg-desc">
+            <title id="svg-title">Host ve container istemcilerinin Kafka listener'larına bağlantısı</title>
+            <desc id="svg-desc">Host istemcisi localhost port 9092 üzerinden PLAINTEXT_HOST listener'a; aynı Compose ağı içindeki uygulama broker adı ve 19092 portu üzerinden PLAINTEXT listener'a bağlanır. Controller 29093'te dahili kalır.</desc>
+            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#526078"/></marker></defs>
+            <rect x="28" y="64" width="220" height="86" rx="14" fill="#e7edff" stroke="#3157c8" stroke-width="2"/>
+            <text x="138" y="98" text-anchor="middle" font-size="18" fill="#172033">Host makine</text>
+            <text x="138" y="127" text-anchor="middle" font-size="15" fill="#172033">localhost:9092</text>
+            <rect x="28" y="205" width="220" height="86" rx="14" fill="#e7edff" stroke="#3157c8" stroke-width="2"/>
+            <text x="138" y="239" text-anchor="middle" font-size="18" fill="#172033">Compose içi uygulama</text>
+            <text x="138" y="268" text-anchor="middle" font-size="15" fill="#172033">broker:19092</text>
+            <rect x="393" y="37" width="470" height="280" rx="18" fill="#edf1f7" stroke="#75839a" stroke-width="2"/>
+            <text x="628" y="70" text-anchor="middle" font-size="20" font-weight="bold" fill="#172033">kafka-lab · Apache Kafka 4.3.1</text>
+            <rect x="473" y="97" width="315" height="60" rx="10" fill="#fff" stroke="#3157c8" stroke-width="2"/>
+            <text x="630" y="122" text-anchor="middle" font-size="16" fill="#172033">PLAINTEXT_HOST listener</text>
+            <text x="630" y="144" text-anchor="middle" font-size="14" fill="#172033">container:9092 ← host:9092</text>
+            <rect x="473" y="181" width="315" height="56" rx="10" fill="#fff" stroke="#3157c8" stroke-width="2"/>
+            <text x="630" y="205" text-anchor="middle" font-size="16" fill="#172033">PLAINTEXT listener</text>
+            <text x="630" y="226" text-anchor="middle" font-size="14" fill="#172033">broker:19092 · internal DNS</text>
+            <rect x="473" y="254" width="315" height="43" rx="10" fill="#fff" stroke="#75839a" stroke-width="2"/>
+            <text x="630" y="281" text-anchor="middle" font-size="15" fill="#172033">CONTROLLER · 29093 · dahili</text>
+            <path d="M248 106 C320 106, 340 127, 470 127" fill="none" stroke="#526078" stroke-width="3" marker-end="url(#arrow)"/>
+            <path d="M248 248 C320 248, 340 209, 470 209" fill="none" stroke="#526078" stroke-width="3" marker-end="url(#arrow)"/>
+          </svg>
+          <div class="callout">
+            <strong>Bağlantı akışı:</strong>
+            <ol>
+              <li>Client bootstrap adresiyle metadata ister.</li>
+              <li>Broker, bağlantının geldiği listener için ilan edilen broker adresini döndürür.</li>
+              <li>Client bu adrese yeniden bağlanır. Host dışındaki bir makine için <code>localhost</code> o makinenin kendisini ifade eder; bu yüzden bu örnek yalnızca host üzerindeki istemciler içindir.</li>
+            </ol>
+          </div>
+          <p><strong>Önemli ayarlar:</strong> <code>listeners</code> bind edilen interface ve portları; <code>advertised.listeners</code> client'a bildirilen DNS adı/portu; Compose <code>ports</code> ise host-container port yayınlamasını belirler. Bu üçü birbirinin yerine geçmez.</p>
+          <p>Windows/macOS'ta Spring Boot host'ta çalışırken <code>spring.kafka.bootstrap-servers=localhost:9092</code> (veya ilgili client bootstrap servers) kullanın. Spring uygulamasını aynı Compose ağına container olarak koyduğunuzda <code>broker:19092</code> kullanın. Host uygulamasından <code>broker:19092</code> kullanmayın; host bu container DNS adını genellikle çözemez.</p>
+        </section>
+
+        <section id="dogrulama">
+          <h2>6. Topic ve event'lerle uçtan uca CLI testi</h2>
+          <p><strong>Neden?</strong> Spring koduna geçmeden önce broker'ın erişilebilir, topic'in yazılabilir ve mesajın okunabilir olduğunu bağımsız olarak doğruluyoruz.</p>
+          <p><strong>Nasıl?</strong> Komutları Compose dosyasının olduğu klasörde Windows PowerShell veya macOS Terminal'den çalıştırın. Kafka CLI komutları container'ın içindeki Apache dağıtımını kullanır.</p>
+          <h3>Broker durumunu ve listener portunu kontrol edin</h3>
+          <pre><code>docker compose ps
+docker compose logs --tail 80 broker</code></pre>
+          <p>Host'tan port erişim testi:</p>
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="Port kontrol işletim sistemi">
+              <button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button>
+            </div>
+            <div class="tabpanel" role="tabpanel">
+              <pre><code>Test-NetConnection localhost -Port 9092</code></pre>
+              <p>Beklenen: <code>TcpTestSucceeded : True</code>.</p>
+            </div>
+            <div class="tabpanel" role="tabpanel" hidden>
+              <pre><code>nc -vz localhost 9092</code></pre>
+              <p>Beklenen: <code>succeeded</code> benzeri TCP bağlantı başarılı mesajı.</p>
+            </div>
+          </div>
+          <h3>Topic oluşturma, listeleme ve detayını görme</h3>
+          <pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.lab --partitions 1 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic orders.lab</code></pre>
+          <p>Bu örneklerde komutlar tek satır tutulmuştur; aynı biçim Windows PowerShell ve macOS zsh'de çalışır.</p>
+          <p>Beklenen describe çıktısında <code>Topic: orders.lab</code>, <code>PartitionCount: 1</code>, <code>ReplicationFactor: 1</code> ve partition 0 için leader görünür. Tek replica nedeniyle bu ayarlar sadece lab içindir.</p>
+          <h3>Console producer ile event yazın</h3>
+          <p>Bu komut terminali interaktif moda geçirir. İki satırı girin, ardından <kbd>Ctrl+C</kbd> ile producer'ı kapatın.</p>
+          <pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.lab</code></pre>
+          <pre><code>{"orderId":"ORD-1001","status":"CREATED"}
+{"orderId":"ORD-1002","status":"CREATED"}</code></pre>
+          <p>Her satır ayrı bir Kafka record olur. Bu testte key vermedik; partition/key ilişkisini Part 1 dokümanında inceleyeceğiz.</p>
+          <h3>Console consumer ile event okuyun</h3>
+          <p>Yeni terminal açıp aşağıdaki komutu çalıştırın. <code>--from-beginning</code> topic'in mevcut başlangıcından okumayı ister. Çıkmak için <kbd>Ctrl+C</kbd>.</p>
+          <pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.lab --from-beginning</code></pre>
+          <p>Beklenen: <code>ORD-1001</code> ve <code>ORD-1002</code> kayıtlarının JSON metinleri. Sonuç görülmüyorsa producer'ın aynı topic'e yazdığını ve consumer'ın doğru broker'a bağlandığını kontrol edin.</p>
+          <h3>Host makinedeki Kafka CLI ile test (isteğe bağlı)</h3>
+          <p>Kafka binary distribution'ın CLI araçlarını da kullanabilirsiniz. İmaj içindeki CLI yukarıdaki adımlar için yeterli olduğundan bu adım zorunlu değildir. Kafka'nın resmi indirme sayfasından uyumlu binary distribution'ı indirin. Windows'ta <code>bin\windows\kafka-topics.bat</code>, macOS'ta <code>bin/kafka-topics.sh</code> kullanın. Uygulama için JDK 17+ ve <code>localhost:9092</code> gerekir.</p>
+          <div class="tabs" data-tabs>
+            <div class="tabbar" role="tablist" aria-label="Host Kafka CLI">
+              <button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button>
+            </div>
+            <div class="tabpanel" role="tabpanel">
+              <pre><code>.\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
+.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic orders.lab --from-beginning</code></pre>
+            </div>
+            <div class="tabpanel" role="tabpanel" hidden>
+              <pre><code>./bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.lab --from-beginning</code></pre>
+            </div>
+          </div>
+          <div class="callout good"><strong>Başarı ölçütü:</strong> Compose service <code>Up</code>; host port 9092 reachable; <code>orders.lab</code> listeleniyor; topic description bir leader gösteriyor; consumer yazdığınız iki JSON satırını okuyor.</div>
+        </section>
+
+        <section id="durdurma">
+          <h2>7. Ortamı durdurma, temizleme ve sıfırlama</h2>
+          <p>Geçici durdurma, broker container'ını durdurur ama container ve volume verisini korur:</p>
+          <pre><code>docker compose stop
+docker compose start
+docker compose ps</code></pre>
+          <p>Container'ları kaldırıp volume'daki Kafka verisini korumak için:</p>
+          <pre><code>docker compose down</code></pre>
+          <p>Tam laboratuvar sıfırlaması topic'leri, event'leri ve KRaft metadata'sını içeren <code>kafka-data</code> volume'unu da siler. Bu işlem geri alınamaz; yalnızca lab verisini kaybetmeyi kabul ediyorsanız çalıştırın:</p>
+          <pre><code>docker compose down -v</code></pre>
+          <div class="callout warn"><strong>Dikkat:</strong> <code>-v</code> volume siler. Gerçek veya korunması gereken bir Kafka volume'unda çalıştırmayın. Sıfırlama sonrası tekrar <code>docker compose up -d</code> ile boş broker başlar.</div>
+          <p>Rancher Desktop'ı kapatmak için uygulamanın menüsünden <strong>Quit</strong> seçin. Factory Reset yalnızca tüm Rancher Desktop kümesini/ayarlarını temizlemek istediğinizde kullanılır; bu Kafka lab'ını sıfırlamak için gerekli değildir. Uygulamayı kaldırmak, volume verisinin de silindiği anlamına gelmez.</p>
+        </section>
+
+        <section id="sorun">
+          <h2>8. Sorun giderme</h2>
+          <table>
+            <thead><tr><th>Belirti</th><th>Muhtemel neden</th><th>Kontrol ve çözüm</th></tr></thead>
+            <tbody>
+              <tr><td><code>Connection refused</code> / <code>broker may not be available</code></td><td>Container başlamamış; broker henüz hazır değil; host portu yayınlanmamış; istemci yanlış bootstrap adresi kullanıyor.</td><td><code>docker compose ps</code> ve <code>docker compose logs --tail 100 broker</code> çalıştırın. Host istemcisi <code>localhost:9092</code>; Compose içi istemci <code>broker:19092</code> kullanmalı. Port testi için Windows'ta <code>Test-NetConnection localhost -Port 9092</code>, macOS'ta <code>nc -vz localhost 9092</code> çalıştırın.</td></tr>
+              <tr><td>Bootstrap bağlantısı kuruluyor ama metadata sonrası bağlantı kopuyor</td><td><code>advertised.listeners</code> istemcinin göremediği DNS adı/portu veriyor.</td><td>Host istemcisinde <code>localhost:9092</code> ilan edilmeli; Compose içi client için <code>broker:19092</code>. İstemci nerede çalışıyorsa ona uygun listener adresi seçin.</td></tr>
+              <tr><td>Port already allocated / bind: address already in use</td><td>9092 portu başka servis tarafından kullanılıyor.</td><td>Uygun işlemi durdurun veya Compose'ta sol/host portunu örneğin <code>19092:9092</code> yapın. Portu değiştirirseniz host bootstrap adresini de <code>localhost:19092</code> yapın; advertised host listener portunu eşleştirin.</td></tr>
+              <tr><td><code>docker: command not found</code> veya daemon'a bağlanamıyor</td><td>dockerd seçilmemiş; Rancher Desktop hazır değil; terminal eski PATH/Context ile açılmış.</td><td>Rancher Desktop'ın Running olduğunu doğrulayın, Container Engine'i dockerd (Moby) yapıp restart edin, yeni terminal açın; <code>docker context ls</code> ve <code>docker info</code> ile kontrol edin.</td></tr>
+              <tr><td>Container sürekli yeniden başlıyor veya Kafka startup timeout</td><td>Yetersiz RAM/CPU, ilk image indirme kesintisi, bozuk/yarım kalan volume.</td><td><code>docker compose logs --tail 150 broker</code> okuyun; Rancher Desktop'a 4 CPU/8GB civarı ayırın ve host uygulamalarını kapatın. Lab verisini silmeyi kabul ediyorsanız <code>docker compose down -v</code> sonrası yeniden başlatın.</td></tr>
+              <tr><td>Volume içindeki cluster id uyuşmazlığı / metadata hatası</td><td>Mevcut volume başka <code>CLUSTER_ID</code> ile hazırlanmış ya da volume verisi bozulmuş.</td><td>Cluster ID'yi koruyun; lab verisi silinebilir durumdaysa <code>docker compose down -v</code> ile volume'u kaldırıp yeniden oluşturun. Bu adım veriyi kalıcı siler.</td></tr>
+              <tr><td>Windows'ta WSL2 dağıtımı başlamıyor; <code>0x80370102</code></td><td>Donanım sanallaştırması kapalı; WSL bileşeni/kernel eski; Windows güncellemeleri bekliyor.</td><td><code>wsl --status</code> / <code>wsl --update</code> kontrol edin, Windows'u güncelleyin, firmware/BIOS'ta sanallaştırmayı etkinleştirmek için kurum IT'nizden destek alın.</td></tr>
+              <tr><td>macOS'ta VM başlatılamıyor veya aşırı yavaş</td><td>Makine kaynakları düşük; uyumsuz sanallaştırma tercihi; başka VM yazılımlarıyla kaynak çakışması.</td><td>Rancher Desktop kaynak ayarlarını ve desteklenen macOS sürümünü kontrol edin. Uygulamanın önerdiği sanallaştırma motoruna dönüp yeniden başlatın; Apple Silicon/Intel imaj mimarisini doğrulayın.</td></tr>
+              <tr><td>Image pull timeout / registry denied / TLS hatası</td><td>Kurumsal proxy, firewall, TLS inspection veya Docker Hub erişim politikası.</td><td>BT/Network ekibinden resmi registry erişimi, proxy ve sertifika prosedürünü öğrenin. Rancher Desktop proxy yapılandırmasını kurum politikasıyla eşleştirin. Kurumsal onay olmadan TLS doğrulamasını kapatmayın veya sertifika kontrolünü atlatmayın.</td></tr>
+              <tr><td><code>docker compose</code> bulunamıyor</td><td>CLI plugin/Compose v2 yok veya farklı engine seçili.</td><td><code>docker compose version</code> deneyin (eski <code>docker-compose</code> yazımı değil). Rancher Desktop'ın dockerd engine'ini seçtiğinizi ve güncel destekleyici araçları kurduğunuzu doğrulayın.</td></tr>
+              <tr><td>JDK bulunamıyor / yanlış Java sürümü</td><td>PATH/JAVA_HOME eski kuruluma işaret ediyor veya terminal kurulum öncesinde açık kalmış.</td><td>Yeni terminal açıp <code>java -version</code> ile kontrol edin. macOS'ta <code>/usr/libexec/java_home -V</code>; Windows'ta <code>where.exe java</code> ve <code>$env:JAVA_HOME</code> kontrol edin.</td></tr>
+            </tbody>
+          </table>
+          <p>Teşhis için ana komutlar:</p>
+          <pre><code>docker compose ps
+docker compose logs --tail 150 broker
+docker context ls
+docker info</code></pre>
+          <p>Kurumsal ağda hata devam ederse hata zamanı, Rancher Desktop sürümü, runtime seçimi ve ilgili log satırlarını kurum IT ekibine iletin; kimlik bilgilerini veya hassas logları paylaşmayın.</p>
+        </section>
+
+        <section id="alistirma">
+          <h2>Mini alıştırma</h2>
+          <ol>
+            <li><code>orders.lab</code> topic'ini 3 partition ile oluşturun. Neden replication factor 1 kalmalı?</li>
+            <li>İki yeni event gönderin; consumer'ı <code>--from-beginning</code> olmadan çalıştırın. Gözleminiz nedir?</li>
+            <li>Host'ta çalışan bir istemci için hangi bootstrap adresini, Compose ağı içindeki istemci için hangisini kullanırsınız? İki adresin de neden gerekli olduğunu açıklayın.</li>
+            <li>Topic'in partition sayısını ve leader bilgisini <code>kafka-topics --describe</code> çıktısından bulun.</li>
+          </ol>
+          <p><strong>Yönlendirme:</strong> İlk sorunun komutu <code>--partitions 3 --replication-factor 1</code> parametrelerini kullanır. Tek broker olduğundan replica factor 1'i aşamaz. İkinci soruda yeni consumer group ilk kez başlıyorsa varsayılan başlangıç davranışı ile önceden yazılmış event'ler okunmayabilir; sonraki modüllerde <code>auto.offset.reset</code> ve consumer group offset'lerini inceleyeceğiz.</p>
+        </section>
+
+        <section id="ozet">
+          <h2>Kısa özet</h2>
+          <ul class="checklist">
+            <li>JDK 21 LTS kurulup <code>java -version</code> ile doğrulandı.</li>
+            <li>Rancher Desktop dockerd/Moby runtime ile kuruldu; bu laboratuvarda Kubernetes kapalı.</li>
+            <li>Resmi <code>apache/kafka:4.3.1</code> imajı tek broker/controller olarak KRaft modunda çalıştırıldı.</li>
+            <li>Host istemcisi <code>localhost:9092</code>, Compose içi istemci <code>broker:19092</code> adresini kullanıyor.</li>
+            <li>Topic oluşturuldu, event'ler yazıldı ve okundu. Volume sıfırlaması için <code>docker compose down -v</code> kullanılır; bu veri siler.</li>
+          </ul>
+        </section>
+
+        <section id="ozdegerlendirme">
+          <h2>Kendini değerlendir</h2>
+          <p>Önce soruları yanıtlayın, sonra her cevabı açıp kontrol edin.</p>
+          <details><summary>1. Bu lab'da neden dockerd (Moby) seçiyoruz?</summary><p>Çünkü verilen uygulama adımları ve Compose dosyası Docker CLI/API'sini kullanır; <code>docker compose</code> ile en doğrudan çalışır. containerd de çalıştırabilir ancak <code>nerdctl</code> ile komut farklılıkları olabilir.</p></details>
+          <details><summary>2. KRaft kurulumunda ZooKeeper var mı?</summary><p>Hayır. KRaft, Kafka'nın metadata/quorum yönetimini Kafka controller'larıyla yapar. Bu tek düğümlü lab'da broker ve controller rolleri aynı process/container'dadır.</p></details>
+          <details><summary>3. Host'taki Spring uygulaması hangi adrese bağlanmalı?</summary><p><code>localhost:9092</code>. Compose ağı içindeki uygulama ise <code>broker:19092</code> kullanır. İlan edilen adres, istemcinin çalıştığı network'ten erişilebilir olmalıdır.</p></details>
+          <details><summary>4. <code>docker compose down</code> ile <code>docker compose down -v</code> arasındaki fark nedir?</summary><p><code>down</code> container ve network'ü kaldırır, yönetilen volume verisini varsayılan olarak korur. <code>down -v</code> volume'u da silerek Kafka event ve metadata verisini kalıcı olarak kaldırır.</p></details>
+          <details><summary>5. Bu tek broker lab'ı neden production için uygun değildir?</summary><p>Tek replica, tek broker ve PLAINTEXT nedeniyle broker arızasına karşı yedeklilik, uygun güvenlik ve production dayanıklılığı sağlamaz. Üretimde çok broker, replication, TLS/authentication/ACL, izleme ve işletim politikaları gerekir.</p></details>
+        </section>
+      </article>
+    </div>
+  </main>
+  <footer>Introduction to Kafka · 00 Ortam Kurulumu · Eğitim laboratuvarı</footer>
+  <script>
+    document.querySelectorAll("[data-tabs]").forEach((group, groupIndex) => {
+      const buttons = [...group.querySelectorAll('[role="tab"]')];
+      const panels = [...group.querySelectorAll('[role="tabpanel"]')];
+      const select = (index) => {
+        buttons.forEach((button, i) => {
+          button.setAttribute("aria-selected", String(i === index));
+          button.tabIndex = i === index ? 0 : -1;
+          panels[i].hidden = i !== index;
+        });
+      };
+      buttons.forEach((button, index) => {
+        button.id = `tabs-${groupIndex}-tab-${index}`;
+        button.setAttribute("aria-controls", `tabs-${groupIndex}-panel-${index}`);
+        panels[index].id = `tabs-${groupIndex}-panel-${index}`;
+        panels[index].setAttribute("aria-labelledby", button.id);
+        button.addEventListener("click", () => select(index));
+        button.addEventListener("keydown", (event) => {
+          if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+            event.preventDefault();
+            const delta = event.key === "ArrowRight" ? 1 : -1;
+            const next = (index + delta + buttons.length) % buttons.length;
+            select(next);
+            buttons[next].focus();
+          }
+        });
+      });
+      select(0);
+    });
+    document.querySelectorAll("pre").forEach((block) => {
+      const button = document.createElement("button");
+      button.className = "copy";
+      button.type = "button";
+      button.textContent = "Kopyala";
+      button.setAttribute("aria-label", "Kod bloğunu panoya kopyala");
+      button.addEventListener("click", async () => {
+        const code = block.querySelector("code");
+        try {
+          await navigator.clipboard.writeText(code ? code.innerText : block.innerText);
+          button.textContent = "Kopyalandı";
+        } catch {
+          button.textContent = "Kopyalama başarısız";
+        }
+        window.setTimeout(() => { button.textContent = "Kopyala"; }, 1800);
+      });
+      block.append(button);
+    });
+  </script>
+</body>
+</html>

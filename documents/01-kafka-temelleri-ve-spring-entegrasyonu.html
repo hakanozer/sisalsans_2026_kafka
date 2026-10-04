@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>01 · Kafka Temelleri ve Spring Entegrasyonu</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f6fa;--s:#fff;--s2:#edf1f7;--t:#172033;--m:#526078;--l:#d6deea;--a:#3157c8;--as:#e7edff;--c:#111827;--ct:#e7edf7;--w:#805400}
+@media(prefers-color-scheme:dark){:root{--bg:#10141d;--s:#191f2b;--s2:#222b3a;--t:#edf2fa;--m:#b2bfd2;--l:#354155;--a:#9db4ff;--as:#283858;--c:#0b0f16;--ct:#e7edf7;--w:#f2ca76}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:1rem}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--a)}.hero{padding:3rem max(1rem,calc((100% - 1120px)/2));background:linear-gradient(120deg,#172b57,#3157c8 68%,#5675d8);color:white}.hero p{max-width:900px;color:#e0e8ff}.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:#c5d3ff;font-weight:750}h1{font-size:clamp(2rem,5vw,3.1rem);line-height:1.15;margin:.4rem 0}main{width:min(1120px,calc(100% - 2rem));margin:1.5rem auto 4rem}.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:1rem;align-items:start}nav,article,.card{background:var(--s);border:1px solid var(--l);border-radius:14px;box-shadow:0 8px 28px #13234114}nav{position:sticky;top:1rem;padding:1rem;max-height:calc(100vh - 2rem);overflow:auto}nav a{display:block;padding:.22rem .35rem;color:var(--m);text-decoration:none;font-size:.9rem}nav a:hover{background:var(--as);color:var(--a)}article{padding:clamp(1rem,3vw,2rem);min-width:0}section{margin-bottom:2.4rem}h2{border-bottom:1px solid var(--l);padding-bottom:.35rem;font-size:1.5rem}h3{font-size:1.12rem;margin:1.25rem 0 .3rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem}.card{padding:1rem;box-shadow:none}.callout{margin:1rem 0;padding:.8rem 1rem;background:var(--as);border-left:4px solid var(--a);border-radius:0 8px 8px 0}.warn{border-color:var(--w)}.tabs{border:1px solid var(--l);border-radius:10px;overflow:hidden;margin:1rem 0}.tabbar{display:flex;gap:.3rem;padding:.45rem;background:var(--s2)}.tabbar button{border:0;border-radius:7px;padding:.5rem .8rem;background:transparent;color:var(--t);font:inherit;cursor:pointer}.tabbar button[aria-selected=true]{background:var(--s);color:var(--a);font-weight:700}.tabpanel{padding:1rem}[hidden]{display:none!important}pre{position:relative;overflow:auto;padding:2.5rem 1rem 1rem;border-radius:10px;background:var(--c);color:var(--ct);font: .86rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}pre code{white-space:pre}.copy{position:absolute;right:.5rem;top:.5rem;background:#283244;color:var(--ct);border:1px solid #606b7b;border-radius:6px;padding:.25rem .5rem;cursor:pointer}code:not(pre code){background:var(--s2);padding:.08rem .25rem;border-radius:4px;font: .92em ui-monospace,Consolas,monospace}table{border-collapse:collapse;width:100%;margin:1rem 0}td,th{border:1px solid var(--l);padding:.6rem;text-align:left;vertical-align:top}th{background:var(--s2)}.diagram{width:100%;height:auto;background:var(--s);border:1px solid var(--l);border-radius:10px;margin:.8rem 0}details{border:1px solid var(--l);border-radius:8px;padding:.7rem 1rem;margin:.6rem 0}summary{font-weight:700;cursor:pointer}footer{text-align:center;color:var(--m);padding:1.5rem}@media(max-width:820px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}nav div{columns:2}}@media(max-width:520px){nav div{columns:1}table{display:block;overflow-x:auto}}@media print{.hero{padding:1rem;print-color-adjust:exact}.layout{display:block}nav,.copy,.tabbar{display:none!important}.tabpanel[hidden]{display:block!important}article,.card{box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}section,pre,table{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="eyebrow">Introduction to Kafka · Part 1</div><h1>Kafka Temelleri ve Spring Entegrasyonu</h1><p>Birbirini doğrudan çağıran sipariş servislerini Kafka event'leriyle gevşek bağlayalım. Önce Kafka kayıt modelini anlayıp ardından Spring Kafka producer ve consumer'larını birlikte çalıştıracağız.</p></header>
+<main><div class="layout"><nav><strong>İçindekiler</strong><div><a href="#hedef">Hedefler ve ön koşullar</a><a href="#kavramlar">Temel kavramlar</a><a href="#yolculuk">Event yolculuğu</a><a href="#topic">CLI laboratuvarı</a><a href="#spring">Spring Boot kodu</a><a href="#guvenilirlik">Teslimat semantikleri</a><a href="#coupling">Sıkı bağlılıktan event'e</a><a href="#hatalar">Hatalar ve iyi uygulamalar</a><a href="#alistirma">Mini alıştırma</a><a href="#ozet">Özet ve quiz</a></div></nav><article>
+<section id="versiyon"><h2>Sürüm ve ön koşullar</h2><p>4 Ekim 2026 tarihinde resmi kaynaklarda doğrulanan örnek sürümler: <strong>Apache Kafka 4.3.1</strong>, <strong>Spring Boot 4.1.1</strong>, <strong>Spring Kafka 4.1.1</strong> (Boot dependency management üzerinden) ve <strong>JDK 21 LTS</strong>. 00 numaralı laboratuvarda Apache imajı <code>apache/kafka:4.3.1</code> olarak sabitlenmişti. Kurumun desteklediği Boot/JDK matrisi farklıysa uyumlu release çiftini kullanın; dependency sürümünü ayrıca sabitlemeyin, Boot BOM'un yönetmesine izin verin. <a href="https://github.com/spring-projects/spring-boot/releases">Spring Boot releases</a>, <a href="https://github.com/spring-projects/spring-kafka/releases">Spring Kafka releases</a>, <a href="https://kafka.apache.org/community/downloads/">Kafka downloads</a>.</p><p>Ön koşul: 00 dokümanındaki Kafka ayakta ve <code>localhost:9092</code> üzerinden erişilebilir. Aşağıdaki Producer/Consumer kodu Spring Boot 4.x ve Spring Kafka 4.x API'lerini kullanır.</p></section>
+<section id="hedef"><h2>Öğrenme hedefi ve ön koşullar</h2><div class="grid"><div class="card"><h3>Hedefler</h3><ul><li>Broker, topic, partition, offset ve consumer group ilişkisini açıklamak.</li><li>Event key'inin partition seçimine ve sıralamaya etkisini anlamak.</li><li>Spring Kafka ile key'li mesaj üretip dinlemek.</li><li>At-most-once, at-least-once ve exactly-once kapsamını ayırt etmek.</li></ul></div><div class="card"><h3>Ön koşullar</h3><ul><li>Çalışan Kafka (00 dokümanı).</li><li>JDK 17+, Maven veya Gradle, IntelliJ IDEA.</li><li>Spring Boot ve REST/controller bilgisi. Uygulama iskeletini burada tekrar kurmuyoruz.</li></ul></div></div></section>
+<section id="kavramlar"><h2>1. Temel kavramlar: önce neden, sonra nasıl</h2><table><thead><tr><th>Kavram</th><th>Neden gerekli?</th><th>Nasıl çalışır?</th><th>Operasyonel not</th></tr></thead><tbody>
+<tr><td>Broker</td><td>Event'leri kalıcı olarak saklayan ve client isteklerini karşılayan sunucu.</td><td>Producer record yazar; consumer partition'ları broker'dan okur. Küme birden çok broker içerebilir.</td><td>00 laboratuvarında tek broker; bu hata toleransı sağlamaz.</td></tr>
+<tr><td>Topic</td><td>Event akışını iş anlamına göre isimlendirir (ör. <code>orders.created</code>).</td><td>Topic, sıralı log'lardan oluşan partition'lar koleksiyonudur.</td><td>Topic ismi, retention, cleanup policy ve erişim sözleşmesini açık seçin.</td></tr>
+<tr><td>Partition</td><td>Paralellik ve ölçekleme sağlar.</td><td>Her partition kendi içinde sıralı log'dur. Key'e göre kayıtlar genellikle aynı partition'a yönlendirilir.</td><td>Sıralama topic'in tamamında değil, partition başınadır.</td></tr>
+<tr><td>Offset</td><td>Consumer'ın ilerlemesini ve tekrar okumasını mümkün kılar.</td><td>Partition içindeki record konumudur; offset her partition için ayrı artar.</td><td>Offset bir global ID değildir; silinen/compact edilen kayıtlar nedeniyle ardışık görünmeyebilir.</td></tr>
+<tr><td>Consumer group</td><td>Birden çok instance'ın işi paylaşmasını ve bağımsız uygulamaların aynı event'i okumasını sağlar.</td><td>Aynı group içindeki bir partition aynı anda bir consumer üyeye atanır; farklı group'lar veriyi bağımsız tüketir.</td><td>Consumer sayısı partition sayısından fazlaysa bazı consumer'lar boşta kalır.</td></tr>
+</tbody></table>
+<h3>Partition, key ve group şeması</h3><svg class="diagram" viewBox="0 0 900 320" role="img" aria-label="Producer key ile partition seçer; consumer group partition'ları üyelerine atar"><defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0v6l9-3z" fill="#526078"/></marker></defs><rect x="25" y="105" width="170" height="90" rx="14" fill="#e7edff" stroke="#3157c8"/><text x="110" y="143" text-anchor="middle" font-size="18" fill="#172033">Producer</text><text x="110" y="171" text-anchor="middle" font-size="14" fill="#172033">key=orderId</text><rect x="330" y="35" width="250" height="230" rx="14" fill="#edf1f7" stroke="#75839a"/><text x="455" y="65" text-anchor="middle" font-size="18" fill="#172033">orders topic</text><rect x="360" y="85" width="190" height="42" rx="7" fill="white" stroke="#3157c8"/><text x="455" y="112" text-anchor="middle" font-size="15" fill="#172033">partition 0 · offsets</text><rect x="360" y="145" width="190" height="42" rx="7" fill="white" stroke="#3157c8"/><text x="455" y="172" text-anchor="middle" font-size="15" fill="#172033">partition 1 · offsets</text><rect x="360" y="205" width="190" height="42" rx="7" fill="white" stroke="#3157c8"/><text x="455" y="232" text-anchor="middle" font-size="15" fill="#172033">partition 2 · offsets</text><rect x="690" y="70" width="175" height="175" rx="14" fill="#e7edff" stroke="#3157c8"/><text x="777" y="100" text-anchor="middle" font-size="17" fill="#172033">Group A</text><text x="777" y="135" text-anchor="middle" font-size="14" fill="#172033">consumer-1</text><text x="777" y="165" text-anchor="middle" font-size="14" fill="#172033">consumer-2</text><text x="777" y="195" text-anchor="middle" font-size="14" fill="#172033">partition assignment</text><path d="M195 150H325" stroke="#526078" stroke-width="3" marker-end="url(#a)"/><path d="M580 105H685M580 165H685M580 225H685" stroke="#526078" stroke-width="2" marker-end="url(#a)"/></svg>
+<p><strong>Key stratejisi:</strong> Sipariş event'inde <code>orderId</code> key'i aynı siparişe ait event'leri genellikle aynı partition'a yönlendirir ve partition içi sıralamayı korur. Null key ile dağıtım davranışı producer/client sürümüne ve partitioner'a bağlıdır. Key seçimi veri dağılımını da belirler: tek bir aşırı yoğun müşteri key'i hot partition yaratabilir.</p></section>
+<section id="yolculuk"><h2>2. Bir event'in producer'dan consumer'a yolculuğu</h2><ol><li>Producer event oluşturur ve key belirler.</li><li>Partitioner hedef partition'ı seçer; producer broker'a record gönderir.</li><li><code>acks</code> ayarıyla belirlenen onay koşulu sağlandığında send sonucu tamamlanır.</li><li>Broker record'u partition log'una append eder ve offset atar.</li><li>Consumer group partition assignment alır; consumer fetch eder, işler ve offset commit eder.</li></ol><div class="callout"><strong>Dikkat:</strong> Producer future'ının başarılı tamamlanması ile iş veritabanı transaction'ının commit olması aynı transaction değildir. DB yazımı + Kafka publish atomikliği için transactional outbox gibi bir desen gerekir.</div></section>
+<section id="topic"><h2>3. CLI laboratuvarı</h2><p>Topic ve broker'ı 00 dokümanındaki Compose projesi ile ayağa kaldırın. Komutlar container içi Apache Kafka CLI'sini çağırır.</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic orders.events</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic orders.events</code></pre></div></div>
+<p>Key=value biçiminde console producer kullanarak tekrar edilebilir key routing gözleyin. İki terminal gerekir.</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.events --property parse.key=true --property key.separator=:</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.events --property parse.key=true --property key.separator=:</code></pre></div></div><p>Girdi: <code>ORD-42:CREATED</code> ve ardından <code>ORD-42:PAID</code>; producer'dan Ctrl+C ile çıkın. Consumer:</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.events --from-beginning --property print.key=true --property print.partition=true --property print.offset=true</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.events --from-beginning --property print.key=true --property print.partition=true --property print.offset=true</code></pre></div></div><p>Beklenen satırlar key, value, partition ve offset içerir. ORD-42 için iki event'in aynı partition'a gittiğini görün. Partitioner/hash detayları ve partition sayısının değiştirilmesinin routing etkisi için key policies'i ayrıca tartışın.</p>
+<h3>Group ve lag gözlemi</h3><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list</code></pre></div></div><p>İşleyen Spring consumer group'u yoksa liste boş olabilir. Consumer başlatıldıktan sonra şu komutu çalıştırıp <code>CURRENT-OFFSET</code>, <code>LOG-END-OFFSET</code>, <code>LAG</code> sütunlarını gözleyin:</p><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group order-processor</code></pre><p>Beklenen: partition başına satır; group yeni/aktif ise offset'ler görünür. Lag kabaca log end offset ile consumer committed offset arasındaki farktır; uygulama gecikmesinin tek başına tam teşhisi değildir.</p></section>
+<section id="spring"><h2>4. Spring Kafka: çalışan producer ve consumer parçaları</h2><p>Aşağıdaki kodlar Kafka'ya özgü sınıflardır; controller, proje oluşturma ve REST iskeleti bu eğitim kapsamı dışındadır. Örnek Boot <strong>4.1.1</strong> kullanır, Maven/Gradle Spring Kafka sürümünü Boot dependency management'ten alır.</p>
+<h3>Bağımlılık</h3><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Maven</button><button role="tab" aria-selected="false">Gradle</button></div><div class="tabpanel" role="tabpanel"><p>Boot parent/BOM mevcut kabul edilir; sürüm belirtilmez.</p><pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.kafka&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-kafka&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>dependencies {
+    implementation("org.springframework.kafka:spring-kafka")
+}</code></pre></div></div>
+<h3>application.yml</h3><pre><code>spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: order-processor
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+        spring.json.trusted.packages: com.example.orders
+        spring.json.value.default.type: com.example.orders.OrderEvent
+        spring.json.use.type.headers: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    listener:
+      ack-mode: manual</code></pre><p><code>JsonSerializer/Deserializer</code> class adları ve Spring JSON type header davranışı Spring Kafka sürümünde değişebilir. Bu sade örnek trusted package ve varsayılan event tipini açıkça belirler; uygulamada üretici/consumer kontratını kontrol edin, geniş wildcard trusted packages kullanmayın. Burada <code>manual</code> ack kullanıldığı için listener event işini tamamladıktan sonra <code>Acknowledgment</code> çağırır.</p>
+<h3>Event tipi ve producer</h3><pre><code>package com.example.orders;
+
+import java.time.Instant;
+
+public record OrderEvent(String orderId, String status, Instant occurredAt) {}</code></pre><p>Record immutable event DTO'sudur. Event'e sonradan mutable entity veya secret alanları eklemeyin; payload bir dış sözleşmedir.</p><pre><code>package com.example.orders;
+
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.stereotype.Service;
+import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+
+@Service
+public class OrderEventPublisher {
+    private final KafkaTemplate&lt;String, OrderEvent&gt; kafkaTemplate;
+
+    public OrderEventPublisher(KafkaTemplate&lt;String, OrderEvent&gt; kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+    public CompletableFuture&lt;SendResult&lt;String, OrderEvent&gt;&gt; publish(
+            String orderId, String status) {
+        var event = new OrderEvent(orderId, status, Instant.now());
+        return kafkaTemplate.send("orders.events", orderId, event)
+                .whenComplete((result, error) -&gt; {
+                    if (error != null) {
+                        // Üretimde logger/metric/notification ile hatayı görünür kılın.
+                        System.err.println("Kafka publish failed: " + error.getMessage());
+                    } else {
+                        var metadata = result.getRecordMetadata();
+                        System.out.printf("Published topic=%s partition=%d offset=%d%n",
+                                metadata.topic(), metadata.partition(), metadata.offset());
+                    }
+                });
+    }
+}</code></pre><p><code>KafkaTemplate.send(topic,key,value)</code> key'i sipariş kimliği yapar. Future sonucu log/metric üretir; başarısız publish'i başarı gibi saymayın. HTTP isteğini Kafka yanıtını bekleyerek sınırsız bloklamayın.</p>
+<h3>Topic, DLT ve retry yapılandırması</h3><pre><code>package com.example.orders;
+
+import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.TopicBuilder;
+
+@Configuration
+public class KafkaTopics {
+    @Bean
+    NewTopic ordersTopic() {
+        return TopicBuilder.name("orders.events")
+                .partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    NewTopic ordersDltTopic() {
+        return TopicBuilder.name("orders.events.DLT")
+                .partitions(3).replicas(1).build();
+    }
+}</code></pre><p>Tek broker'da replicas(1) zorunlu lab sınırlamasıdır. Prod'da broker sayısı/replication ve ACL'yi platform ekibi belirlemelidir.</p><pre><code>package com.example.orders;
+
+import org.apache.kafka.common.TopicPartition;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.util.backoff.FixedBackOff;
+
+@Configuration
+public class KafkaErrorConfiguration {
+    @Bean
+    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate&lt;Object, Object&gt; template) {
+        var recoverer = new DeadLetterPublishingRecoverer(
+                template, (record, exception) -&gt;
+                new TopicPartition(record.topic() + ".DLT", record.partition()));
+        return new DefaultErrorHandler(recoverer, new FixedBackOff(1_000L, 2L));
+    }
+}</code></pre><p>Listener container factory'nin bu error handler'ı kullandığını uygulama sürümünüzde doğrulayın; Boot'un varsayılan factory'sine bean otomatik bağlanması Boot/Spring Kafka sürümüne bağlı olabilir. Gerekirse <code>ConcurrentKafkaListenerContainerFactory</code> bean'inde <code>setCommonErrorHandler</code> çağırın. DLT partition sayısını ana topic ile eşleştirin; retry edilemeyen poison event ve recoverer publish failure için alarm/operasyon prosedürü oluşturun.</p>
+<h3>Consumer ve header'lar</h3><pre><code>package com.example.orders;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OrderEventConsumer {
+    @KafkaListener(topics = "orders.events", groupId = "order-processor",
+                   concurrency = "3")
+    public void receive(ConsumerRecord&lt;String, OrderEvent&gt; record,
+                        Acknowledgment acknowledgment) {
+        var event = record.value();
+        System.out.printf("key=%s partition=%d offset=%d timestamp=%d%n",
+                record.key(), record.partition(), record.offset(), record.timestamp());
+        System.out.printf("headers=%s order=%s status=%s%n",
+                record.headers(), event.orderId(), event.status());
+        // İş mantığı idempotent olmalı; listener hatasında ack etmeden exception fırlatın.
+        acknowledgment.acknowledge();
+    }
+}</code></pre><p>Bu explicit ack kodu için listener factory ack mode <code>MANUAL</code> veya <code>MANUAL_IMMEDIATE</code> olarak ayarlanmalıdır; <code>record</code> ack mode ile Acknowledgment verilmesi tutarlı değildir. Seçenek A: <code>ack-mode: manual</code> kullanın. Seçenek B: acknowledgment parametresini kaldırıp record listener tamamlanınca commit yaklaşımını seçin. Ack yalnızca iş etkisi güvenli biçimde tamamlandıktan sonra verilmelidir.</p>
+<div class="callout warn"><strong>Önemli:</strong> Manual ack yalnızca iş etkisi güvenli biçimde tamamlandıktan sonra verilmelidir. Daha basit bir başlangıç alternatifi olarak acknowledgement parametresini kaldırıp <code>ack-mode: record</code> ile listener tamamlanınca commit yaklaşımını kullanın; transaction/DB işlemi ile offset atomikliği ayrıca tasarlanmalıdır.</div>
+<h3>Concurrency ve partition</h3><p><code>concurrency=3</code> üç listener consumer thread'i açmayı ister; aynı group'ta en fazla üç partition bu örnekte paralel atanabilir. Consumer sayısını partition sayısından fazla açmak fayda sağlamaz ve thread/resource tüketir. Rebalance sırasında partition sahipliği değişebilir; handler hızlı dönmeli, uzun işleri kontrollü executor/outbox/iş kuyruğuna aktarın.</p>
+<h3>Otomatik ve manuel offset</h3><p><code>enable.auto.commit=false</code> consumer library'nin periyodik offset commit etmesini kapatır. Spring container seçilen ack mode'a göre commit yapar. Commit çok erken olursa event kaybı, çok geç olursa yeniden işleme (duplicate) ihtimali doğar. <code>max.poll.records</code> her poll'daki kayıt sayısını sınırlar; mesaj işleme süresi <code>max.poll.interval.ms</code> sınırını aşarsa consumer group rebalance olabilir. <code>auto.offset.reset=earliest</code> yalnızca group'ta geçerli committed offset yoksa uygulanır; her restart'ta baştan okutmaz.</p></section>
+<section id="guvenilirlik"><h2>5. Teslimat semantikleri: sınırlarıyla anlayalım</h2><table><thead><tr><th>Semantik</th><th>Davranış</th><th>Ne zaman / risk</th></tr></thead><tbody><tr><td>At-most-once</td><td>Offset işten önce commit edilir; tekrar işlenmez, fakat arıza anında event kaybolabilir.</td><td>Kaybın kabul edildiği telemetri örnekleri. Finansal işlemde uygun değildir.</td></tr><tr><td>At-least-once</td><td>Offset iş başarıyla tamamlandıktan sonra commit edilir; arızada event yeniden gelebilir.</td><td>Sık tercih edilir. Consumer iş etkisi idempotent tasarlanmalı.</td></tr><tr><td>Exactly-once</td><td>Kafka içindeki consume-process-produce ve offset commit akışı transaction/producer fencing ile atomik hale getirilebilir.</td><td>Kafka'dan dış DB/e-posta/ödeme sistemi yan etkisini otomatik olarak exactly-once yapmaz. Dış sistemde idempotency veya outbox gerekir.</td></tr></tbody></table><p>Producer güvenilirliği için <code>acks=all</code>, <code>enable.idempotence=true</code>, uygun <code>retries</code> ve <code>max.in.flight.requests.per.connection</code> kombinasyonunu desteklenen broker/client sürümünde kullanın. <code>min.insync.replicas</code> broker/topic policy'siyle birlikte değerlendirilir; tek broker lab'da 1'den yükseği yazımı engelleyebilir. Idempotent producer aynı producer session'ı içindeki retry duplicate riskini düşürür, iş event'inin iki kez publish edilmesini değil.</p><p><code>isolation.level=read_committed</code> consumer'ın abort edilmiş transaction record'larını görmemesini sağlar; transaction kullanmayan basit producer için fark yaratmaz. Kafka transaction konusunu güvenilir mesajlaşma modülünde uygulayacağız.</p></section>
+<section id="coupling"><h2>6. Sıkı bağlı senkron akıştan gevşek bağlı event'lere</h2><p><strong>Sıkı bağlı akışın problemi:</strong> Order API sırayla Payment, Inventory ve Notification API'lerini çağırırsa her bağımlılığın erişilebilirliği ve yanıt süresi siparişin başarısını etkiler. Zaman aşımı sonrası belirsizlik, retry fırtınası ve zincirleme arıza oluşabilir.</p><p><strong>Event yaklaşımı:</strong> Order servisi transaction/outbox sınırında <code>OrderCreated</code> event'i yayınlar. Payment, Inventory ve Notification kendi consumer group'larıyla bağımsız tüketir. Üretici consumer listesi bilmez; event contract'ı ortak entegrasyon yüzeyidir.</p><p>Bu gevşek bağ, iş akışının otomatik olarak tutarlı olduğu anlamına gelmez: eventual consistency, retry, duplicate, sıralama, telafi (saga) ve gözlemlenebilirlik tasarlanmalıdır.</p></section>
+<section id="hatalar"><h2>7. Sık yapılan hatalar ve iyi uygulamalar</h2><ul><li>Topic genelinde total ordering var sanmak: sıralama partition içinde ve key politikasına bağlıdır.</li><li>Consumer group ID'yi servis instance'ı başına rastgele üretmek: her instance ayrı group olur ve her biri tüm event'leri alır. Aynı mantıksal uygulamanın replica'ları sabit group ID paylaşmalı.</li><li><code>earliest</code> her açılışta başa döner sanmak: yalnız offset yoksa/uygun değilse kullanılır.</li><li>Başarılı Kafka ack'ini DB transaction başarısı sanmak: iki sistem ayrı transaction'dır.</li><li>Consumer'ı dış yan etki sonrası offset commit öncesi çökerse duplicate oluşabileceğini göz ardı etmek.</li><li>Partition sayısını iş yükü/ordering ihtiyacını anlamadan artırmak: key hash dağılımı değişebilir ve per-key sıralama garantisini zayıflatabilir.</li><li>Geniş JSON trusted package veya class header'larına koşulsuz güvenmek: payload tiplerini kontrollü allowlist edin.</li></ul><p>İyi başlangıç: sabit group.id, key üzerinde aggregate ID, record başına idempotent handler, ölçülen lag, açık schema, retry limit ve DLT alarmı.</p></section>
+<section id="alistirma"><h2>Mini alıştırma</h2><ol><li>CLI producer ile aynı <code>orderId</code> key'ine CREATED ve PAID event'leri yazın. İki event'in partition ve offset'ini bulun.</li><li>Consumer group ID'yi <code>order-processor</code> ile sabit tutup ikinci consumer instance başlatın. Partition'ların nasıl dağıldığını açıklayın.</li><li>Topic'i 3 partition'dan 2'ye düşürme girişimi yapın veya neden mümkün olmadığını deneyle gösterin. Partition sayısını değiştirmenin key routing'e etkisini tartışın.</li><li>Consumer iş etkisi tamamlanmadan offset commit edilirse hangi semantik oluşur? İşten sonra commit öncesi crash olursa?</li></ol><p><strong>Kontrol noktası:</strong> Aynı group içinde partition başına tek aktif owner; farklı group'lar topic'i bağımsız okuyabilir. Birçok Kafka admin API'si partition sayısını azaltmayı desteklemez.</p></section>
+<section id="ozet"><h2>Kısa özet</h2><ul><li>Kafka topic'i partition'lara bölünmüş kalıcı event log'udur; offset partition-local konumdur.</li><li>Key partition routing'ini ve partition içi ordering'i etkiler.</li><li>Consumer group paralellik ve bağımsız subscription sağlar.</li><li>Spring Kafka'da key'li <code>KafkaTemplate</code>, <code>@KafkaListener</code>, ack ve error handler bilinçli yapılandırılır.</li><li>At-least-once için duplicate ihtimalini idempotency ile yönetin; Kafka exactly-once dış DB yan etkilerini kapsamaz.</li></ul><h2>Kendini değerlendir</h2><details><summary>1. Kafka global topic sıralaması sağlar mı?</summary><p>Hayır. Sıralama her partition içinde sağlanır.</p></details><details><summary>2. Aynı group içindeki iki consumer aynı partition'ı eşzamanlı işler mi?</summary><p>Normal assignment modelinde aynı group içinde bir partition aynı anda bir consumer üyeye atanır.</p></details><details><summary>3. auto.offset.reset=earliest her restart'ta başa sarar mı?</summary><p>Hayır. Group için kullanılabilir committed offset yoksa başlangıç konumunu belirler.</p></details><details><summary>4. Idempotent producer consumer'ın DB'ye duplicate yazmasını engeller mi?</summary><p>Hayır. Producer retry'larını kapsar; consumer side effect için idempotency gerekir.</p></details><details><summary>5. Kafka transaction dış DB ile atomik commit sağlar mı?</summary><p>Hayır. Kafka transaction Kafka record ve offset sınırında atomiklik sağlar; DB için outbox/CDC gibi desen gerekir.</p></details></section>
+</article></div></main><footer>Introduction to Kafka · 01 Temeller ve Spring Entegrasyonu</footer>
+<script>
+document.querySelectorAll("[data-tabs]").forEach((g,n)=>{const b=[...g.querySelectorAll('[role=tab]')],p=[...g.querySelectorAll('[role=tabpanel]')];function sel(i){b.forEach((x,j)=>{x.setAttribute("aria-selected",String(i===j));x.tabIndex=i===j?0:-1;p[j].hidden=i!==j})}b.forEach((x,i)=>{x.id=`t${n}b${i}`;x.setAttribute("aria-controls",`t${n}p${i}`);p[i].id=`t${n}p${i}`;p[i].setAttribute("aria-labelledby",x.id);x.onclick=()=>sel(i);x.onkeydown=e=>{if(["ArrowRight","ArrowLeft"].includes(e.key)){e.preventDefault();let j=(i+(e.key==="ArrowRight"?1:-1)+b.length)%b.length;sel(j);b[j].focus()}}});sel(0)});
+document.querySelectorAll("pre").forEach(x=>{const b=document.createElement("button");b.className="copy";b.type="button";b.textContent="Kopyala";b.onclick=async()=>{try{await navigator.clipboard.writeText(x.querySelector("code")?.innerText||x.innerText);b.textContent="Kopyalandı"}catch{b.textContent="Kopyalama başarısız"}setTimeout(()=>b.textContent="Kopyala",1600)};x.append(b)});
+</script></body></html>

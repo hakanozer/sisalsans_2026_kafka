@@ -1,0 +1,169 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>05 · Kafka Connect ve Stream Processing</title><style>
+:root{color-scheme:light dark;--bg:#f4f6fa;--s:#fff;--s2:#edf1f7;--t:#172033;--m:#526078;--l:#d6deea;--a:#3157c8;--as:#e7edff;--c:#111827;--ct:#e7edf7;--w:#805400}@media(prefers-color-scheme:dark){:root{--bg:#10141d;--s:#191f2b;--s2:#222b3a;--t:#edf2fa;--m:#b2bfd2;--l:#354155;--a:#9db4ff;--as:#283858;--c:#0b0f16;--ct:#e7edf7;--w:#f2ca76}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--a)}.hero{padding:3rem max(1rem,calc((100% - 1100px)/2));background:linear-gradient(120deg,#172b57,#3157c8,#5675d8);color:white}.hero p{color:#e0e8ff}.eyebrow{font-size:.8rem;letter-spacing:.12em;color:#c5d3ff}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;margin:.4rem 0}main{width:min(1100px,calc(100% - 2rem));margin:1.5rem auto 4rem}.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1rem}nav,article,.card{background:var(--s);border:1px solid var(--l);border-radius:14px;box-shadow:0 8px 25px #13234112}nav{position:sticky;top:1rem;padding:1rem;height:max-content;max-height:95vh;overflow:auto}nav a{display:block;padding:.2rem;color:var(--m);text-decoration:none;font-size:.9rem}article{padding:clamp(1rem,3vw,2rem);min-width:0}section{margin-bottom:2.4rem}h2{border-bottom:1px solid var(--l);padding-bottom:.35rem}h3{margin:1.2rem 0 .3rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem}.card{padding:1rem;box-shadow:none}.callout{padding:.8rem 1rem;background:var(--as);border-left:4px solid var(--a);margin:1rem 0}.warn{border-color:var(--w)}.tabs{border:1px solid var(--l);border-radius:10px;overflow:hidden;margin:1rem 0}.tabbar{display:flex;background:var(--s2);padding:.4rem;gap:.3rem}.tabbar button{border:0;padding:.5rem .8rem;border-radius:6px;background:transparent;color:var(--t);cursor:pointer}.tabbar button[aria-selected=true]{background:var(--s);color:var(--a);font-weight:bold}.tabpanel{padding:1rem}[hidden]{display:none!important}pre{position:relative;overflow:auto;padding:2.5rem 1rem 1rem;border-radius:9px;background:var(--c);color:var(--ct);font:.86rem/1.55 ui-monospace,Consolas,monospace}pre code{white-space:pre}.copy{position:absolute;right:.5rem;top:.5rem;background:#283244;color:white;border:1px solid #606b7b;border-radius:5px;padding:.2rem .5rem;cursor:pointer}code:not(pre code){background:var(--s2);padding:.08rem .25rem;border-radius:4px;font:.92em ui-monospace,Consolas,monospace}table{border-collapse:collapse;width:100%;margin:1rem 0}td,th{border:1px solid var(--l);padding:.6rem;text-align:left;vertical-align:top}th{background:var(--s2)}details{border:1px solid var(--l);border-radius:8px;padding:.7rem 1rem;margin:.6rem 0}summary{font-weight:bold;cursor:pointer}footer{text-align:center;color:var(--m);padding:1rem}@media(max-width:800px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}nav div{columns:2}}@media(max-width:520px){nav div{columns:1}table{display:block;overflow:auto}}@media print{.layout{display:block}nav,.copy,.tabbar{display:none!important}.tabpanel[hidden]{display:block!important}.hero{print-color-adjust:exact;padding:1rem}article,.card{box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}section,pre,table{break-inside:avoid}}
+</style></head><body><header class="hero"><div class="eyebrow">Introduction to Kafka · Part 2 · Modül 4</div><h1>Kafka Connect ve Stream Processing</h1><p>Mevcut veritabanlarıyla Kafka arasında sürekli veri akışı kurmak ve event'leri uygulama kodu yazmadan ya da stateful stream application içinde dönüştürmek için Connect, CDC, Kafka Streams ve ksqlDB'yi birlikte inceleyeceğiz.</p></header><main><div class="layout"><nav><b>İçindekiler</b><div><a href="#hedef">Hedefler</a><a href="#connect">Connect modeli</a><a href="#cdc">CDC ve Debezium</a><a href="#streams">Kafka Streams</a><a href="#ksql">ksqlDB</a><a href="#setup">Rancher Desktop</a><a href="#ops">Operasyonel notlar</a><a href="#exercise">Mini alıştırma</a><a href="#quiz">Özet ve quiz</a></div></nav><article>
+<section><h2>Sürümler ve ön koşullar</h2><p>Resmi kaynak kontrolü (2026-10-04): Apache Kafka <strong>4.3.1</strong>; Confluent Platform docs Quick Start'ta image <strong>8.3.2</strong> ve bu release train Kafka 4.3.x ile eşleşiyor; Debezium <strong>3.7.0.Final</strong> release tag'i; Spring Boot/Spring Kafka <strong>4.1.1</strong>, JDK 21 LTS. Debezium/Connect broker-client uyumluluğunu ve image yayın durumunu deployment öncesi Debezium tested versions sayfasında tekrar doğrulayın. Kaynak: <a href="https://docs.confluent.io/platform/current/connect/index.html">Kafka Connect docs</a>, <a href="https://debezium.io/releases/3.7/">Debezium 3.7</a>, <a href="https://strimzi.io/quickstarts/">Strimzi quickstarts</a>.</p><p>Ön koşul: 00'daki <code>kafka-lab</code> KRaft broker'ı ve dockerd/Moby. Ek DB/connect/ksql container'ları RAM ve image disk alanı kullanır; lab sırasında diğer ağır uygulamaları kapatın.</p></section>
+<section id="hedef"><h2>Öğrenme hedefleri ve ön koşullar</h2><div class="grid"><div class="card"><h3>Hedefler</h3><ul><li>Source ve sink connector'ı, worker, task ve converter ilişkisini açıklamak.</li><li>PostgreSQL logical decoding CDC'sini Debezium ile Kafka'ya taşımak.</li><li>Kafka Streams topology ve ksqlDB SQL stream'i çalıştırmak.</li><li>Connector status, topic ve consumer lag'i CLI ile gözlemlemek.</li></ul></div><div class="card"><h3>Ön koşullar</h3><ul><li>Kafka topic/partition/group bilgisi.</li><li>Docker Compose ve REST API kullanımı.</li><li>DB event payload, schema ve access control anlayışı.</li></ul></div></div></section>
+<section id="connect"><h2>1. Kafka Connect: source, sink, worker, task</h2><p><strong>Neden?</strong> Her veri kaynağı/ hedef için tekrar tekrar bespoke producer/consumer yazıp offset, retry ve lifecycle yönetmek maliyetlidir.</p><p><strong>Nasıl?</strong> Connect worker connector plugin'lerini çalıştırır; connector işi task'lara böler. Source dış sistem → Kafka, sink Kafka → dış sistem yönündedir. Converter wire format'ını; SMT (Single Message Transform) basit record mapping'i sağlar. Büyük iş dönüşümü için SMT kullanmayın.</p><table><tr><th>Öğe</th><th>Örnek ayar / sorumluluk</th><th>Dikkat</th></tr><tr><td>Worker</td><td>bootstrap, config/offset/status topic, converter, plugin.path</td><td>Distributed mode'da internal topic'ler RF/partition ve ACL gerektirir.</td></tr><tr><td>Connector</td><td>JDBC/DB/HTTP gibi sistem bağlantısı</td><td>Plugin her worker node'da aynı classpath/version ile olmalı.</td></tr><tr><td>Task</td><td>İş kopyalama birimi ve paralellik</td><td>Max tasks gerçek source partition/connector kabiliyetiyle sınırlı.</td></tr><tr><td>DLQ</td><td>Sink record conversion/write hatalarını ayrı topic'e alabilir</td><td>Connector error tolerance'ı <code>all</code> yapıp hataları gizlemeyin; DLQ'yı izleyin.</td></tr></table></section>
+<section id="cdc"><h2>2. CDC ve Debezium</h2><p><strong>Neden?</strong> Uygulama DB'sinden Kafka'ya güvenilir değişiklik aktarımı, polling sorgularının DB'yi yüklemesini ve her servisin dual-write yapmasını önlemeye yardımcı olur.</p><p><strong>Nasıl?</strong> Debezium source connector DB snapshot alır, ardından transaction log/WAL'daki row değişikliklerini takip edip Kafka topic'lerine yayar. Snapshot ve log akışı, offset/LSN, schema history, DB privileges, replication slot/retention birlikte yönetilmelidir. CDC row-level change'dir; domain event değildir. Domain event üretmek için semantic mapping/outbox gerekir.</p><div class="callout warn"><strong>Güvenlik:</strong> Aşağıdaki örnek yalnızca local lab'dır. DB parolası demo, port 5432 host'a yayınlanmıyor. Production'da least-privilege CDC user, secrets manager, WAL disk alarmı, TLS, retention ve restore prosedürü gerekir.</div></section>
+<section id="streams"><h2>3. Kafka Streams</h2><p><strong>Neden?</strong> Event'ler üzerinde stateful aggregation, join, window ve materialized state'i Java service içinde yapmak için.</p><p><strong>Nasıl?</strong> StreamsBuilder topology kurar; Kafka Streams client input topic'leri tüketir, state store/changelog ile state'i kurtarır ve output topic'ine yazar. <code>application.id</code> consumer group ve internal state topic isimlerini belirler. EOS v2, processing guarantees ayarıyla Kafka input/output/offset akışını transaction'a alabilir; external API yan etkisini kapsamaz.</p><h3>Spring Kafka Streams yapılandırması (string demo)</h3><pre><code>spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    streams:
+      application-id: order-status-normalizer
+      properties:
+        processing.guarantee: exactly_once_v2
+        commit.interval.ms: 1000</code></pre><p>Exactly-once lab tek broker ve RF=1 ile production dayanıklılık garantisi değildir. Kafka Streams config/internal topic replication policy'lerini multi-broker production topology'ye göre ayarlayın.</p><pre><code>@Configuration
+@EnableKafkaStreams
+class OrderTopology {
+    @Bean
+    KStream&lt;String, String&gt; normalize(StreamsBuilder builder) {
+        var input = builder.stream("orders.raw");
+        input.mapValues(String::toUpperCase)
+             .to("orders.normalized");
+        return input;
+    }
+}</code></pre><p>Imports: <code>org.apache.kafka.streams.StreamsBuilder</code>, <code>org.apache.kafka.streams.kstream.KStream</code>, Spring <code>@EnableKafkaStreams</code>. Dependency <code>org.springframework.kafka:spring-kafka</code> ve <code>org.apache.kafka:kafka-streams</code>; Kafka Streams dependency sürümünü Spring Boot/Spring Kafka BOM matrisiyle eşleştirin, arbitrary version override etmeyin.</p></section>
+<section id="ksql"><h2>4. ksqlDB</h2><p><strong>Neden?</strong> SQL bilen ekiplerin stream-table, filter, projection, windowed aggregate gibi işleri JVM service yazmadan tanımlamasını sağlar.</p><p><strong>Nasıl?</strong> ksqlDB server Kafka cluster'a bağlanır; SQL statement persistent query olarak topic okur/yazar. Schema Registry integration opsiyoneldir fakat production schema governance ile birlikte kullanılmalıdır. ksqlDB image availability, license ve lifecycle statüsünü kurumsal platformda teyit edin; self-managed dağıtım Confluent bileşenidir.</p><pre><code>CREATE STREAM order_events (
+  orderId VARCHAR,
+  status VARCHAR
+) WITH (
+  KAFKA_TOPIC='orders.sql.lab',
+  VALUE_FORMAT='JSON'
+);
+
+CREATE STREAM created_orders AS
+  SELECT orderId, status
+  FROM order_events
+  WHERE status = 'CREATED'
+  EMIT CHANGES;</code></pre><p>SQL syntax/format desteği ksqlDB version'ına göre değişebilir. Stream'e veri gönderip <code>SELECT * FROM created_orders EMIT CHANGES;</code> ile çıktıyı gözleyin.</p></section>
+<section id="setup"><h2>5. Rancher Desktop: Connect + Debezium + PostgreSQL + ksqlDB</h2><p>00'daki Compose dosyasını kullanın. <code>services:</code> altına aşağıdaki servisleri ekleyin. Dosyanın en altındaki mevcut <code>volumes:</code> bölümünü yeni <code>postgres-data</code> volume'unu da içerecek şekilde güncelleyin; aynı seviyede iki <code>volumes:</code> anahtarı bırakmayın. Compose iç DNS içinde broker adresi <code>broker:19092</code> olmalı.</p><pre><code>  postgres:
+    image: postgres:17.6
+    container_name: lab-postgres
+    environment:
+      POSTGRES_DB: lab
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lab-only-password
+    command: ["postgres", "-c", "wal_level=logical"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  connect:
+    image: quay.io/debezium/connect:3.7
+    container_name: kafka-connect
+    depends_on:
+      - broker
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: broker:19092
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: connect_configs
+      CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      STATUS_STORAGE_TOPIC: connect_statuses
+      STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      REST_ADVERTISED_HOST_NAME: connect
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+
+  ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:8.3.2
+    container_name: kafka-ksqldb
+    depends_on:
+      - broker
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: broker:19092
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_HOST_NAME: ksqldb-server
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: "1"
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+
+  ksqldb-cli:
+    image: confluentinc/cp-ksqldb-server:8.3.2
+    container_name: kafka-ksqldb-cli
+    depends_on:
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+    stdin_open: true
+
+volumes:
+  kafka-data:
+  postgres-data:  </code></pre><p>Compose image version note: PostgreSQL <code>17.6</code> is a patch-pinned lab example; use a currently maintained patch from the official image page. Debezium project release <code>3.7.0.Final</code> is current; the Quay.io image tag used here is the confirmed <code>3.7</code> release-series tag. Confluent components <code>8.3.2</code> are from the official quickstart. Connect internal topics RF=1 because the lab has one broker only.</p>
+<h3>Windows PowerShell: servisleri başlatıp CDC DB'sini hazırlayın</h3><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>Set-Location "$HOME\kafka-lab"
+docker compose config
+docker compose up -d postgres connect ksqldb-server ksqldb-cli
+docker compose ps
+docker exec -it lab-postgres psql -U postgres -d lab -c "CREATE TABLE IF NOT EXISTS orders (id BIGINT PRIMARY KEY, status TEXT NOT NULL);"</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>cd "$HOME/kafka-lab"
+docker compose config
+docker compose up -d postgres connect ksqldb-server ksqldb-cli
+docker compose ps
+docker exec -it lab-postgres psql -U postgres -d lab -c "CREATE TABLE IF NOT EXISTS orders (id BIGINT PRIMARY KEY, status TEXT NOT NULL);"</code></pre></div></div><h3>Connector kaydı (Windows/macOS ayrı komut)</h3><p>Windows PowerShell'de JSON body'yi güvenli biçimde hashtable ile oluşturup Invoke-RestMethod kullanın:</p><pre><code>$body = @{
+  name = "lab-postgres-orders"
+  config = @{
+    "connector.class" = "io.debezium.connector.postgresql.PostgresConnector"
+    "database.hostname" = "postgres"
+    "database.port" = "5432"
+    "database.user" = "postgres"
+    "database.password" = "lab-only-password"
+    "database.dbname" = "lab"
+    "topic.prefix" = "labdb"
+    "plugin.name" = "pgoutput"
+    "slot.name" = "lab_orders_slot"
+    "publication.autocreate.mode" = "filtered"
+    "schema.include.list" = "public"
+    "table.include.list" = "public.orders"
+    "schema.history.internal.kafka.bootstrap.servers" = "broker:19092"
+    "schema.history.internal.kafka.topic" = "schemahistory.labdb"
+  }
+} | ConvertTo-Json -Depth 6
+Invoke-RestMethod -Method Post -Uri http://localhost:8083/connectors `
+  -ContentType "application/json" -Body $body</code></pre><p>macOS Terminal (zsh): JSON dosyası oluşturup curl ile POST edin:</p><pre><code>cat &gt; connector.json &lt;&lt;'JSON'
+{
+  "name": "lab-postgres-orders",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "lab-only-password",
+    "database.dbname": "lab",
+    "topic.prefix": "labdb",
+    "plugin.name": "pgoutput",
+    "slot.name": "lab_orders_slot",
+    "publication.autocreate.mode": "filtered",
+    "schema.include.list": "public",
+    "table.include.list": "public.orders",
+    "schema.history.internal.kafka.bootstrap.servers": "broker:19092",
+    "schema.history.internal.kafka.topic": "schemahistory.labdb"
+  }
+}
+JSON
+curl -i -X POST http://localhost:8083/connectors \
+  -H 'Content-Type: application/json' \
+  --data-binary @connector.json</code></pre><p>HTTP 201/connector config beklenir. Connector durumunu her iki OS'tan kontrol edin:</p><pre><code>curl http://localhost:8083/connectors/lab-postgres-orders/status
+docker compose logs --tail 100 connect</code></pre><p>Windows PowerShell'de ilk satır yerine: <code>Invoke-RestMethod http://localhost:8083/connectors/lab-postgres-orders/status</code>.</p><p>DB değişikliği yapıp event'i görüntüleyin:</p><pre><code>docker exec lab-postgres psql -U postgres -d lab -c "INSERT INTO orders VALUES (1001, 'CREATED') ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status;"
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker exec -it kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic labdb.public.orders --from-beginning</code></pre><p>Expected: connector status <code>RUNNING</code>, topic <code>labdb.public.orders</code>, Debezium envelope with <code>before</code>, <code>after</code>, <code>source</code>, <code>op</code>. Snapshot/initial row behavior depends on when row exists versus snapshot start.</p>
+<h3>ksqlDB stream processing denemesi</h3><p>Compose CLI container'ına interaktif bağlanın. Önce CLI komutuyla bağlanın ve <code>orders.sql.lab</code> topic'ini oluşturun. İki OS'ta da aşağıdaki komutlar aynıdır:</p><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.sql.lab --partitions 1 --replication-factor 1
+docker compose exec -it ksqldb-cli ksql http://ksqldb-server:8088</code></pre><p>Yeni terminalden console producer'ı başlatıp JSON record girin; örneğin <code>{"orderId":"O-9","status":"CREATED"}</code>. Ctrl+C ile producer'dan çıkın, ardından ksqlDB prompt'una SQL'i girin:</p><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.sql.lab</code></pre><pre><code>CREATE STREAM order_events (
+  orderId VARCHAR KEY,
+  status VARCHAR
+) WITH (KAFKA_TOPIC='orders.sql.lab', VALUE_FORMAT='JSON');
+
+CREATE STREAM created_orders AS
+  SELECT orderId, status FROM order_events
+  WHERE status = 'CREATED' EMIT CHANGES;
+
+SELECT * FROM created_orders EMIT CHANGES;</code></pre><p>Beklenen: input event, persistent query tarafından filtrelenir ve result stream'de görülür. Schema-registry / structured JSON versiyonunda schema ve format config'i ayrıca verin.</p></section>
+<section id="ops"><h2>Operasyonel gözlemler, hatalar ve iyi uygulamalar</h2><ul><li><code>GET /connectors</code>, <code>/status</code>, worker logs; Connect offset/config/status internal topics'i izleyin.</li><li>Debezium PostgreSQL replication slot WAL biriktirebilir; connector kesilirse disk dolabilir. WAL retention/slot lag alert zorunlu.</li><li>Source snapshot'i production'da yük oluşturabilir; table include list, snapshot mode ve incremental snapshot planlanmalı.</li><li>Connect REST API'yi internete açmayın; credentials TLS/auth, network segmentation ve admin ACL ile korunmalı.</li><li>Converter JSON Schema yoksa schema'sız event üretir; production schema governance ile uyumlu converter/Registry seçin.</li><li>Kafka Streams state store/changelog disk kullanır; standby replicas, task assignment, EOS, state restore ve local storage planlanmalı.</li><li>ksqlDB query'leri Kafka Streams application gibi internal topics ve state oluşturabilir; persistent query adlandırma ve lifecycle yönetilmeli.</li><li>CLI record'larında JSON bir envelope ise ksqlDB'de alan path/schema modellemesi gerekir; nested Debezium JSON'u flat row sanmayın.</li></ul><p>Lab'ı durdurmak için <code>docker compose stop connect postgres ksqldb-server</code>; volume dahil sıfırlamak isterseniz <code>docker compose down -v</code> veri kaybettirir ve 00 Kafka lab verisini de siler.</p></section>
+<section id="exercise"><h2>Mini alıştırma</h2><ol><li>Connector config/status endpoint'lerini çağırın, Kafka topic listesinde CDC topic'ini görün.</li><li>Postgres order status'ını UPDATED yapıp Debezium <code>op</code> alanındaki update olayını bulun.</li><li>Connect'i geçici durdurup DB değişikliği yapın, tekrar başlatın; slot ve connector offset'in replay davranışını inceleyin.</li><li>orders.sql.lab topic'ine JSON yazıp ksqlDB stream filter query sonucunu gözleyin.</li><li>CDC row event'i ile <code>OrderPaid</code> domain event'i arasındaki farkı açıklayın.</li></ol><p><strong>Kontrol noktası:</strong> CDC capture DB transaction log'undan row mutation taşır; domain event iş niyeti/semantiğidir. Birini diğerine otomatik eşitlemeyin.</p></section>
+<section id="quiz"><h2>Kısa özet</h2><ul><li>Connect source dışarıdan Kafka'ya, sink Kafka'dan dışarıya taşır.</li><li>Debezium log-based CDC ve snapshot/offset/schema history yönetir.</li><li>Kafka Streams Java topology ile, ksqlDB SQL query ile event akışını işler.</li><li>Her modülde offset, schema, lifecycle, lag, error/DLQ ve resource planı gerekir.</li></ul><h2>Kendini değerlendir</h2><details><summary>1. Source ve sink connector farkı nedir?</summary><p>Source Kafka'ya data üretir; sink Kafka topic'lerini external system'e aktarır.</p></details><details><summary>2. Debezium CDC event'i domain event midir?</summary><p>Hayır; çoğunlukla row change envelope'ıdır. Domain intent için mapping/outbox gerekir.</p></details><details><summary>3. PostgreSQL replication slot neden risklidir?</summary><p>Consumer durunca gerekli WAL birikerek disk alanını tüketebilir.</p></details><details><summary>4. Kafka Streams <code>application.id</code> neyi etkiler?</summary><p>Consumer group kimliği ve internal state/changelog topic namespace'ini etkiler.</p></details><details><summary>5. ksqlDB persistent query ne oluşturur?</summary><p>Kafka topic'leri üzerinde çalışan, event okuyup yeni stream/table sonuçları üreten sürekli query/topology.</p></details></section>
+</article></div></main><footer>Introduction to Kafka · 05 Kafka Connect ve Stream Processing</footer><script>
+document.querySelectorAll("[data-tabs]").forEach((g,n)=>{let b=[...g.querySelectorAll('[role=tab]')],p=[...g.querySelectorAll('[role=tabpanel]')];function s(i){b.forEach((x,j)=>{x.setAttribute("aria-selected",String(i===j));x.tabIndex=i===j?0:-1;p[j].hidden=i!==j})}b.forEach((x,i)=>{x.id=`t${n}b${i}`;x.setAttribute("aria-controls",`t${n}p${i}`);p[i].id=`t${n}p${i}`;p[i].setAttribute("aria-labelledby",x.id);x.onclick=()=>s(i)});s(0)});document.querySelectorAll("pre").forEach(x=>{let b=document.createElement("button");b.className="copy";b.textContent="Kopyala";b.onclick=async()=>{try{await navigator.clipboard.writeText(x.querySelector("code")?.innerText||x.innerText);b.textContent="Kopyalandı"}catch{b.textContent="Kopyalama başarısız"}setTimeout(()=>b.textContent="Kopyala",1600)};x.append(b)});
+</script></body></html>

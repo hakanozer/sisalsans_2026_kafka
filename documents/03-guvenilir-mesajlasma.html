@@ -1,0 +1,132 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>03 · Güvenilir Mesajlaşma</title><style>
+:root{color-scheme:light dark;--bg:#f4f6fa;--s:#fff;--s2:#edf1f7;--t:#172033;--m:#526078;--l:#d6deea;--a:#3157c8;--as:#e7edff;--c:#111827;--ct:#e7edf7;--w:#805400}@media(prefers-color-scheme:dark){:root{--bg:#10141d;--s:#191f2b;--s2:#222b3a;--t:#edf2fa;--m:#b2bfd2;--l:#354155;--a:#9db4ff;--as:#283858;--c:#0b0f16;--ct:#e7edf7;--w:#f2ca76}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--a)}.hero{padding:3rem max(1rem,calc((100% - 1100px)/2));background:linear-gradient(120deg,#172b57,#3157c8,#5675d8);color:white}.hero p{color:#e0e8ff}.eyebrow{font-size:.8rem;letter-spacing:.12em;color:#c5d3ff}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;margin:.4rem 0}main{width:min(1100px,calc(100% - 2rem));margin:1.5rem auto 4rem}.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1rem}nav,article,.card{background:var(--s);border:1px solid var(--l);border-radius:14px;box-shadow:0 8px 25px #13234112}nav{position:sticky;top:1rem;padding:1rem;height:max-content;max-height:95vh;overflow:auto}nav a{display:block;padding:.2rem;color:var(--m);text-decoration:none;font-size:.9rem}article{padding:clamp(1rem,3vw,2rem);min-width:0}section{margin-bottom:2.4rem}h2{border-bottom:1px solid var(--l);padding-bottom:.35rem}h3{margin:1.2rem 0 .3rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.8rem}.card{padding:1rem;box-shadow:none}.callout{padding:.8rem 1rem;background:var(--as);border-left:4px solid var(--a);margin:1rem 0}.warn{border-color:var(--w)}.tabs{border:1px solid var(--l);border-radius:10px;overflow:hidden;margin:1rem 0}.tabbar{display:flex;background:var(--s2);padding:.4rem;gap:.3rem}.tabbar button{border:0;padding:.5rem .8rem;border-radius:6px;background:transparent;color:var(--t);cursor:pointer}.tabbar button[aria-selected=true]{background:var(--s);color:var(--a);font-weight:bold}.tabpanel{padding:1rem}[hidden]{display:none!important}pre{position:relative;overflow:auto;padding:2.5rem 1rem 1rem;border-radius:9px;background:var(--c);color:var(--ct);font:.86rem/1.55 ui-monospace,Consolas,monospace}pre code{white-space:pre}.copy{position:absolute;right:.5rem;top:.5rem;background:#283244;color:white;border:1px solid #606b7b;border-radius:5px;padding:.2rem .5rem;cursor:pointer}code:not(pre code){background:var(--s2);padding:.08rem .25rem;border-radius:4px;font:.92em ui-monospace,Consolas,monospace}table{border-collapse:collapse;width:100%;margin:1rem 0}td,th{border:1px solid var(--l);padding:.6rem;text-align:left;vertical-align:top}th{background:var(--s2)}details{border:1px solid var(--l);border-radius:8px;padding:.7rem 1rem;margin:.6rem 0}summary{font-weight:bold;cursor:pointer}footer{text-align:center;color:var(--m);padding:1rem}@media(max-width:800px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}nav div{columns:2}}@media(max-width:520px){nav div{columns:1}table{display:block;overflow:auto}}@media print{.layout{display:block}nav,.copy,.tabbar{display:none!important}.tabpanel[hidden]{display:block!important}.hero{print-color-adjust:exact;padding:1rem}article,.card{box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}section,pre,table{break-inside:avoid}}
+</style></head><body><header class="hero"><div class="eyebrow">Introduction to Kafka · Part 2 · Modül 2</div><h1>Güvenilir Mesajlaşma</h1><p>Broker'ın event'i saklaması tek başına iş akışını güvenilir yapmaz. Crash, timeout, retry ve iki sistem arasındaki transaction sınırlarını ele alıp duplicate'leri güvenli biçimde yöneteceğiz.</p></header><main><div class="layout"><nav><b>İçindekiler</b><div><a href="#hedef">Hedef ve ön koşullar</a><a href="#idempotent">Idempotent consumer</a><a href="#outbox">Transactional outbox</a><a href="#tx">Kafka transaction</a><a href="#retry">Retry ve DLT</a><a href="#lab">Rancher Desktop lab</a><a href="#check">Hatalar ve iyi uygulamalar</a><a href="#exercise">Mini alıştırma</a><a href="#quiz">Özet ve quiz</a></div></nav><article>
+<section><h2>Sürümler ve ön koşullar</h2><p>2026-10-04 tarihinde doğrulanan örnekler: Kafka <strong>4.3.1</strong>, Spring Boot <strong>4.1.1</strong>, Spring Kafka <strong>4.1.1</strong>, JDK 21 LTS. İmaj/version değerlerini gerçek kurumsal release matrisiyle doğrulayın. Ön koşul: çalışan 00 lab'ı ve 01'deki Spring Kafka kavramları. İlgili resmi kaynaklar: <a href="https://kafka.apache.org/documentation/#producerconfigs_enable.idempotence">Kafka producer configs</a>, <a href="https://docs.spring.io/spring-kafka/reference/kafka/exactly-once.html">Spring Kafka transactions</a>, <a href="https://docs.spring.io/spring-kafka/reference/kafka/annotation-error-handling.html">Spring Kafka error handling</a>.</p></section>
+<section id="hedef"><h2>Öğrenme hedefleri ve ön koşullar</h2><div class="grid"><div class="card"><h3>Hedef</h3><ul><li>Consumer duplicate'lerini business key ile idempotent yapmak.</li><li>DB commit ile Kafka publish arasındaki dual-write problemini çözmek.</li><li>Kafka transaction'ın exactly-once scope'unu açıklamak.</li><li>Bounded retry/backoff ve DLT işletim akışını kurmak.</li></ul></div><div class="card"><h3>Ön koşul</h3><ul><li>Kafka broker ve CLI.</li><li>Spring transaction, SQL unique constraint, KafkaTemplate/@KafkaListener.</li><li>Örnek domain: order/payment/outbox.</li></ul></div></div></section>
+<section id="idempotent"><h2>1. Idempotent consumer</h2><p><strong>Neden?</strong> Consumer dış DB'ye yazdıktan sonra offset commit etmeden çökerse Kafka aynı record'u yeniden sunar. Network timeout'ta producer send başarısız görünüp broker'a yazılmış da olabilir. “Bir kere gelir” varsayımı iş verisini bozabilir.</p><p><strong>Nasıl?</strong> Her event'e producer tarafında kalıcı unique <code>eventId</code> verin. Consumer DB transaction'ında önce processed-event tablosuna <code>eventId</code> insert eder; unique constraint çakışırsa event daha önce uygulanmıştır. Insert ve business update aynı DB transaction'ında commit olmalıdır.</p><pre><code>CREATE TABLE processed_event (
+  consumer_name VARCHAR(120) NOT NULL,
+  event_id UUID NOT NULL,
+  processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (consumer_name, event_id)
+);
+
+CREATE TABLE order_projection (
+  order_id VARCHAR(200) PRIMARY KEY,
+  status VARCHAR(80) NOT NULL
+);</code></pre><p>JDBC'de PostgreSQL örneği, duplicate'i kontrollü yakalamak için <code>INSERT ... ON CONFLICT DO NOTHING</code> kullanabilir. Sadece unique violation'ı yutup başka DB hatalarını yutmayın. DB commit'ten sonra Kafka offset commit başarısız olursa duplicate yeniden gelir; unique kayıt yan etkiyi bir kez uygular, offset yeniden commit edilebilir.</p><pre><code>@Service
+public class IdempotentOrderProjection {
+    private final JdbcTemplate jdbc;
+
+    public IdempotentOrderProjection(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Transactional
+    public void apply(String eventId, OrderEvent event) {
+        int inserted = jdbc.update("""
+                INSERT INTO processed_event(consumer_name, event_id)
+                VALUES ('order-projection', ?::uuid)
+                ON CONFLICT DO NOTHING
+                """, eventId);
+        if (inserted == 0) {
+            return; // Bu consumer bu event ID'yi daha önce uygulamış.
+        }
+        jdbc.update("""
+                INSERT INTO order_projection(order_id, status) VALUES (?, ?)
+                ON CONFLICT (order_id) DO UPDATE SET status = EXCLUDED.status
+                """, event.orderId(), event.status());
+    }
+}</code></pre><p>Listener bu metodu çağırır ve yalnız başarıyla döndükten sonra offset'i commit eder; DB işlemi rollback olursa processed-event insert'i de rollback olur. JSON event'e producer tarafında stable event ID ekleyin. PostgreSQL <code>UUID</code> kolonu için Java tarafında <code>UUID</code> tipi kullanmak tercih edilir; örnekte <code>?::uuid</code> ile string parametre cast edilmiştir.</p><div class="callout warn"><strong>Sınır:</strong> Idempotency key kapsamı consumer adı + event ID olmalıdır; iki bağımsız projection aynı event'i işleyebilir. Processed-event kaydının retention'ı, replay ve yasal saklama planıyla uyumlu olmalı. Idempotency tek başına event sıralamasını, dış API'nin exactly-once davranışını veya yanlış business key'i çözmez.</div></section>
+<section id="outbox"><h2>2. Transactional outbox</h2><p><strong>Neden?</strong> Bir request hem order DB'sini güncelleyip hem Kafka'ya event yayınlarsa iki bağımsız write oluşur: DB commit olup publish başarısız olabilir veya Kafka publish olup DB rollback olabilir. Bu dual-write atomik değildir.</p><p><strong>Nasıl?</strong> Tek DB transaction'ında business row ve outbox row yazılır. Ayrı relay/poller ya da CDC connector outbox row'u Kafka'ya aktarır. Publish sonrası outbox kaydı delivered/retained işaretlenir; crash durumunda tekrar gönderilebilir, dolayısıyla event ID ile consumer idempotency yine gerekir.</p><pre><code>CREATE TABLE outbox_event (
+  event_id UUID PRIMARY KEY,
+  aggregate_type VARCHAR(120) NOT NULL,
+  aggregate_id VARCHAR(200) NOT NULL,
+  event_type VARCHAR(200) NOT NULL,
+  payload JSONB NOT NULL,
+  occurred_at TIMESTAMP NOT NULL,
+  published_at TIMESTAMP NULL
+);
+
+-- Uygulama DB transaction'ı:
+-- UPDATE orders SET status = 'CREATED' WHERE id = :id;
+-- INSERT INTO outbox_event(event_id, aggregate_type, aggregate_id,
+--   event_type, payload, occurred_at)
+-- VALUES (:eventId, 'Order', :orderId, 'OrderCreated', :json, now());</code></pre><p>Polling relay'e ilişkin basitleştirilmiş SQL seçimi:</p><pre><code>SELECT event_id, aggregate_id, event_type, payload
+FROM outbox_event
+WHERE published_at IS NULL
+ORDER BY occurred_at
+FOR UPDATE SKIP LOCKED
+LIMIT 100;</code></pre><p>Örnek PostgreSQL'dir; DB dialect'ine göre SQL farklılaşır. Worker kayıtları transaction'da kilitler, Kafka'ya gönderir, yalnız ack geldikten sonra published işaretler. Broker ack ile DB published commit arasında crash tekrar publish doğurabilir: event ID zorunludur. Uzun süre DB lock tutmayın; leasing/claim state ve poll batch ölçümü planlayın.</p><h3>Spring ile DB transaction sınırı</h3><pre><code>@Service
+public class OrderCommandService {
+    private final JdbcTemplate jdbc;
+
+    public OrderCommandService(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Transactional
+    public void createOrder(long id, String eventId, String jsonPayload) {
+        jdbc.update("INSERT INTO orders(id, status) VALUES (?, 'CREATED')", id);
+        jdbc.update("""
+                INSERT INTO outbox_event(event_id, aggregate_type, aggregate_id,
+                    event_type, payload, occurred_at)
+                VALUES (?::uuid, 'Order', ?, 'OrderCreated', ?::jsonb, now())
+                """, eventId, Long.toString(id), jsonPayload);
+    }
+}</code></pre><p>Bu Spring <code>@Transactional</code> method'u iki JDBC write'ı aynı datasource transaction'ında yürütür. Kafka publish bu transaction'a eklenmez; outbox relay/CDC ayrı süreçtir. DB driver, table schema ve transaction manager'ın aynı datasource'u kullandığını doğrulayın.</p><h3>CDC ile outbox</h3><p>Debezium Outbox Event Router gibi CDC yaklaşımı DB transaction log'undan outbox row değişikliklerini okur; polling yükünü azaltabilir ama connector lifecycle, schema, snapshot, DB replication privileges, log retention ve connector offset'leri işletilmelidir. CDC'nin kurulum adımı Modül 05'te uygulanır.</p></section>
+<section id="tx"><h2>3. Kafka transaction ve exactly-once</h2><p><strong>Neden?</strong> Kafka topic'inden okuyup Kafka topic'ine sonuç yazan stream processor'da output record'ları ile input offsets birlikte commit edilmelidir. Aksi durumda output duplicate veya input kaybı doğabilir.</p><p><strong>Nasıl?</strong> Transactional producer, output records ve consumed offsets'i Kafka transaction'ında yazar/commit eder. Consumer <code>isolation.level=read_committed</code> kullanıp yalnız commit edilmiş transactional event'leri görür. Transaction ID her uygulama instance'ında unique olmalı; partition/task sahipliği değişince eski producer'ı fence etme mekanizması vardır.</p><pre><code>spring:
+  kafka:
+    producer:
+      transaction-id-prefix: order-tx-${INSTANCE_ID}-
+      acks: all
+      properties:
+        enable.idempotence: true
+    consumer:
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+    listener:
+      ack-mode: record</code></pre><p><code>INSTANCE_ID</code> her concurrently çalışan app instance için unique ve restart'ta çakışmayacak şekilde olmalıdır. Spring Boot transaction prefix ile transactional producer/template oluşturabilir. Aşağıdaki bean'i yalnızca Boot uygulamanız aynı manager'ı auto-configure etmiyorsa tanımlayın; iki kez bean üretmeyin. Spring Kafka Kafka transaction manager'ı Kafka resource transaction'ını yönetir; JPA/DB ile global XA transaction anlamına gelmez.</p><pre><code>@Configuration
+public class KafkaTransactionConfiguration {
+    @Bean
+    KafkaTransactionManager&lt;String, Object&gt; kafkaTransactionManager(
+            ProducerFactory&lt;String, Object&gt; producerFactory) {
+        return new KafkaTransactionManager&lt;&gt;(producerFactory);
+    }
+}</code></pre><p>Spring bean imports: <code>org.springframework.kafka.transaction.KafkaTransactionManager</code> ve <code>org.springframework.kafka.core.ProducerFactory</code>. Boot auto-configuration kullanıyorsanız named manager bean'ini enjekte edin.</p><pre><code>@Service
+public class EnrichmentService {
+    private final KafkaTemplate&lt;String, EnrichedOrder&gt; template;
+
+    public EnrichmentService(KafkaTemplate&lt;String, EnrichedOrder&gt; template) {
+        this.template = template;
+    }
+
+    @Transactional("kafkaTransactionManager")
+    public void emit(String orderId, EnrichedOrder result) {
+        template.send("orders.enriched", orderId, result);
+    }
+}</code></pre><p>Uygulama kodundaki method transactional Kafka manager ve producer transaction prefix ile çalışır. Gerçek consume-transform-produce için listener container transaction'ı input offsets ile bağlamalı; yalnız <code>@Transactional</code> method yeterli değildir. Boot sürümüne uygun listener container wiring'i integration test ile doğrulayın.</p><div class="callout warn"><strong>Exactly-once kapsamı:</strong> Kafka consume → transform → Kafka produce/offset akışında Kafka içinde atomiklik sağlayabilir. Bankaya HTTP çağrısı, e-posta gönderimi veya DB side effect aynı Kafka transaction'ına dahil değildir. Dış yan etkiler için outbox, inbox/idempotency, provider idempotency key ve saga düşünün.</div><p>Önemli konfigürasyonlar: producer <code>transactional.id</code> (Spring prefix), <code>enable.idempotence</code>, <code>acks=all</code>; consumer <code>isolation.level=read_committed</code>; topic replication ve <code>min.insync.replicas</code> production dayanıklılığına göre. Tek broker lab replication=1 olduğu için HA/EOS production kanıtı değildir.</p></section>
+<section id="retry"><h2>4. Retry stratejisi ve Dead-Letter Topic</h2><p><strong>Neden?</strong> Geçici DB/network hataları tekrar denemeyle düzelebilir. Geçersiz payload gibi kalıcı hata sonsuz retry ile partition'ı bloke edebilir.</p><p><strong>Nasıl?</strong> Hataları transient/permanent sınıflandırın; sınırlı attempt ve backoff uygulayın; sonrasında DLT'ye key, payload, original topic/partition/offset, exception sınıfı ve timestamp header'larıyla gönderin. DLT event'i triage, redrive ve audit süreciyle ele alınır.</p><pre><code>@Configuration
+class ErrorConfig {
+    @Bean
+    DefaultErrorHandler errorHandler(KafkaTemplate&lt;Object, Object&gt; template) {
+        var recoverer = new DeadLetterPublishingRecoverer(template);
+        var handler = new DefaultErrorHandler(
+                recoverer, new ExponentialBackOffWithMaxRetries(4));
+        handler.addNotRetryableExceptions(IllegalArgumentException.class);
+        return handler;
+    }
+}</code></pre><p>Import: <code>org.springframework.kafka.listener.ExponentialBackOffWithMaxRetries</code>. Constructor/method ayrıntısını Spring Kafka 4.1.1 API'sinde doğrulayın. DeadLetterPublishingRecoverer varsayılan hedefi original topic + <code>.DLT</code>, partition routing davranışını production'da açıkça seçip DLT partition sayısını uygun tutun. Retry sırasında aynı partition'daki sonraki event'lerin bloklanma etkisini değerlendirin; retry topic yaklaşımı sıralamayı değiştirir ve ayrı topic/consumer operasyonu ister.</p><h3>Retry karar tablosu</h3><table><tr><th>Hata</th><th>Politika</th></tr><tr><td>DB timeout / kısa süreli dependency unavailable</td><td>Kısa bounded retry; gecikme/backoff; maksimum süre ve load shedding.</td></tr><tr><td>Schema/validation permanent reject</td><td>Hızlı DLT veya quarantine; retry yok ya da çok az.</td></tr><tr><td>Authorization/configuration</td><td>Blind retry yapmayın; alarm ve düzeltme.</td></tr><tr><td>DLT publish failure</td><td>Recoverer hata görünür olsun; log/metric/alarm, container failure policy ve replay prosedürü tanımlı.</td></tr></table><p>DLT consumer'ı DLT'yi otomatikçe ana topic'e sürekli geri basmamalı; poison loop oluşur. Redrive öncesi payload düzeltme, schema compatibility, event idempotency ve audit bilgisi kaydedin.</p></section>
+<section id="lab"><h2>5. Rancher Desktop üzerinde retry/DLT lab</h2><p>00'daki broker'ı Windows PowerShell veya macOS Terminal'de Compose klasöründen kontrol edin; aynı komutlar iki işletim sisteminde de çalışır.</p><div class="tabs" data-tabs><div class="tabbar" role="tablist"><button role="tab" aria-selected="true">Windows · PowerShell</button><button role="tab" aria-selected="false">macOS · zsh</button></div><div class="tabpanel" role="tabpanel"><pre><code>docker compose ps
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.retry.lab --partitions 1 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.retry.lab.DLT --partitions 1 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.retry.lab</code></pre></div><div class="tabpanel" role="tabpanel" hidden><pre><code>docker compose ps
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.retry.lab --partitions 1 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders.retry.lab.DLT --partitions 1 --replication-factor 1
+docker exec kafka-lab /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic orders.retry.lab</code></pre></div></div><p>Uygulama kodundaki error handler'ı <code>orders.retry.lab</code> üzerinde kasıtlı hata üreten listener'a bağlayın; CLI bu Java exception'ını tek başına simüle etmez. Sonra DLT'yi görüntüleyin:</p><pre><code>docker exec -it kafka-lab /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders.retry.lab.DLT --from-beginning --property print.key=true --property print.headers=true</code></pre><p>Beklenen: yalnız retry limitinden sonra recover edilen event DLT'de görünür; headers içinde original topic/partition/offset ve exception metadata bulunur. Exact header listesi Spring Kafka version ve serializer'a göre değişebilir. Consumer group offset'lerini izleyin:</p><pre><code>docker exec kafka-lab /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group order-processor</code></pre></section>
+<section id="check"><h2>Hatalar, önemli ayarlar ve iyi uygulamalar</h2><ul><li>Outbox row'u business update'ten ayrı transaction'a yazmak dual-write sorununu geri getirir.</li><li>Kafka ack alınmadan outbox row'u published işaretlemek event kaybettirebilir; ack sonrası DB commit crash'i duplicate üretebilir, idempotency şarttır.</li><li>Kafka EOS'yi harici DB/email/payment için genel exactly-once sanmak.</li><li>Sınırsız retry, retry storm ve consumer lag yaratır. Backoff exponential + max attempt + retry budget belirleyin.</li><li><code>acks=all</code>, <code>enable.idempotence=true</code>, <code>retries</code>, <code>max.in.flight.requests.per.connection</code> uyumlu yapılandırılmalı; <code>acks=all</code> tek başına durable quorum değildir.</li><li><code>min.insync.replicas</code>, replication factor ve broker sayısı birlikte seçilir. RF=1 tek node arızasına dayanmaz.</li><li>DLT'ye yazma hatası da failure'dır: metric/alarm ve güvenli recovery sağlayın.</li><li>Consumer ack/commit business işleminin commit sırasına göre yapılmalı; DB transaction ve Kafka offset için gerçek transaction sınırını test edin.</li></ul></section>
+<section id="exercise"><h2>Mini alıştırma</h2><ol><li>Consumer DB update yaptıktan hemen sonra, offset commit'ten önce öldürün. Redelivery ve processed_event unique constraint davranışını gözlemleyin.</li><li>Outbox publish ack sonrası fakat published_at commit öncesi crash senaryosunu çizin. Hangi duplicate koruması gerekir?</li><li>Bir transient timeout ve bir permanent validation hatası tanımlayıp retry/DLT politikasını yazın.</li><li>Kafka transaction ile outbox'ın hangi farklı problemi çözdüğünü açıklayın.</li></ol><p><strong>Kontrol noktası:</strong> Uçtan uca at-least-once + idempotent side-effect çoğu kurumsal iş yükünde yönetilebilir güvenilirlik hedefidir. “Exactly-once” ifadesinin transaction scope'u belirtilmelidir.</p></section>
+<section id="quiz"><h2>Kısa özet</h2><ul><li>Consumer duplicate'leri business event ID ve DB unique constraint ile yönetilebilir.</li><li>Transactional outbox DB business state ile yayın niyetini aynı transaction'a alır; relay/CDC duplicate üretebilir.</li><li>Kafka transaction Kafka output ve offset commitini atomik yapar; harici sistemleri kapsamaz.</li><li>Bounded retry/backoff, DLT, idempotency ve alarm birlikte tasarlanır.</li></ul><h2>Kendini değerlendir</h2><details><summary>1. DB update sonrası offset commit öncesi crash ne doğurur?</summary><p>Record yeniden tüketilebilir; DB side effect idempotent değilse duplicate uygulanır.</p></details><details><summary>2. Outbox pattern dual-write'ı nasıl azaltır?</summary><p>Business update ve outbox row aynı DB transaction'ında commit edilir; relay daha sonra yayınlar.</p></details><details><summary>3. Kafka transaction harici DB commit'ini kapsar mı?</summary><p>Hayır; Kafka resource/offset sınırında atomiklik sağlar.</p></details><details><summary>4. DLT neden otomatik sonsuz redrive edilmemeli?</summary><p>Poison message retry loop ve sürekli failure yaratabilir; triage ve kontrollü redrive gerekir.</p></details><details><summary>5. Idempotent producer consumer business duplicate'lerini çözer mi?</summary><p>Hayır; producer protocol retry duplicate riskini azaltır, application-level duplicate'e consumer idempotency gerekir.</p></details></section>
+</article></div></main><footer>Introduction to Kafka · 03 Güvenilir Mesajlaşma</footer><script>
+document.querySelectorAll("[data-tabs]").forEach((g,n)=>{let b=[...g.querySelectorAll('[role=tab]')],p=[...g.querySelectorAll('[role=tabpanel]')];function s(i){b.forEach((x,j)=>{x.setAttribute("aria-selected",String(i===j));x.tabIndex=i===j?0:-1;p[j].hidden=i!==j})}b.forEach((x,i)=>{x.id=`t${n}b${i}`;x.setAttribute("aria-controls",`t${n}p${i}`);p[i].id=`t${n}p${i}`;p[i].setAttribute("aria-labelledby",x.id);x.onclick=()=>s(i)});s(0)});document.querySelectorAll("pre").forEach(x=>{let b=document.createElement("button");b.className="copy";b.textContent="Kopyala";b.onclick=async()=>{try{await navigator.clipboard.writeText(x.querySelector("code")?.innerText||x.innerText);b.textContent="Kopyalandı"}catch{b.textContent="Kopyalama başarısız"}setTimeout(()=>b.textContent="Kopyala",1600)};x.append(b)});
+</script></body></html>
