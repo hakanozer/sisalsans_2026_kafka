@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: kafka-lab
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: order
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets: ["order:8090"]
+
+      - job_name: consumer
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets: ["consumer:8095"]
+
+      - job_name: kafka-broker
+        static_configs:
+          - targets: ["jmx-exporter:9404"]
+
+      - job_name: kafka-exporter
+        static_configs:
+          - targets: ["kafka-exporter:9308"]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jmx-exporter-config
+  namespace: kafka-lab
+data:
+  config.yml: |
+    startDelaySeconds: 0
+    jmxUrl: service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    rules:
+      - pattern: 'kafka.server<type=(.+), name=(.+)><>Value'
+        name: kafka_server_$1_$2
+        type: GAUGE
+      - pattern: 'kafka.server<type=(.+), name=(.+)><>Count'
+        name: kafka_server_$1_$2_total
+        type: COUNTER
+      - pattern: 'kafka.controller<type=(.+), name=(.+)><>Value'
+        name: kafka_controller_$1_$2
+        type: GAUGE
+      - pattern: 'kafka.controller<type=(.+), name=(.+)><>Count'
+        name: kafka_controller_$1_$2_total
+        type: COUNTER
+      - pattern: 'kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>(Count|Mean|99thPercentile)'
+        name: kafka_network_request_$2_$1_$3
+        type: GAUGE
+        labels:
+          request: "$2"
+      - pattern: 'kafka.network<type=RequestChannel, name=RequestQueueSize><>Value'
+        name: kafka_network_request_queue_size
+        type: GAUGE
+      - pattern: 'kafka.log<type=Log, name=Size, topic=(.+), partition=(.+)><>Value'
+        name: kafka_log_size_bytes
+        type: GAUGE
+        labels:
+          topic: "$1"
+          partition: "$2"
+      - pattern: 'kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec)><>Count'
+        name: kafka_server_$1_total
+        type: COUNTER
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: kafka-lab
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+  dashboard-provider.yml: |
+    apiVersion: 1
+    providers:
+      - name: Kafka observability
+        orgId: 1
+        folder: Kafka
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+  kafka-overview.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "short" } },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "id": 1,
+          "targets": [
+            { "expr": "kafka_consumergroup_lag", "legendFormat": "{{consumergroup}} / {{topic}}", "refId": "A" }
+          ],
+          "title": "Consumer group lag",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "short" } },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "id": 2,
+          "targets": [
+            { "expr": "kafka_server_replicamanager_underreplicatedpartitions", "legendFormat": "Under-replicated", "refId": "A" }
+          ],
+          "title": "Under-replicated partitions",
+          "type": "stat"
+        }
+      ],
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": ["kafka"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Kafka overview",
+      "uid": "kafka-overview",
+      "version": 1
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin
+  namespace: kafka-lab
+type: Opaque
+stringData:
+  username: admin
+  password: admin
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: kafka-lab
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: kafka-lab
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 3Gi

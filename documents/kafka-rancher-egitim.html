@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kafka + Rancher Desktop Eğitimi</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --bg-strong: #eaf1ff;
+      --panel: #ffffff;
+      --panel-alt: #f8faff;
+      --text: #1c2430;
+      --muted: #5f6f87;
+      --primary: #1e5eff;
+      --primary-soft: rgba(30,94,255,0.12);
+      --accent: #18a085;
+      --warning: #c77900;
+      --danger: #c0392b;
+      --success: #129b5d;
+      --border: #dfe7f4;
+      --shadow: 0 14px 28px rgba(14, 29, 46, 0.08);
+    }
+    body.dark {
+      --bg: #0f1726;
+      --bg-strong: #111d33;
+      --panel: #16233a;
+      --panel-alt: #101b2f;
+      --text: #edf4ff;
+      --muted: #b3c0d8;
+      --primary: #7aa8ff;
+      --primary-soft: rgba(122,168,255,0.18);
+      --accent: #66d7c2;
+      --warning: #ffbb55;
+      --danger: #ff7a7a;
+      --success: #7fe1af;
+      --border: #243149;
+      --shadow: 0 16px 32px rgba(0,0,0,0.25);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 300px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 22px 18px 32px;
+      box-shadow: var(--shadow);
+      z-index: 10;
+    }
+    .sidebar h1 {
+      font-size: 1.1rem;
+      margin: 0 0 1rem;
+      line-height: 1.4;
+    }
+    .sidebar nav ul {
+      list-style: none; padding: 0; margin: 0;
+    }
+    .sidebar nav li {
+      margin: 0.2rem 0;
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 0.6rem 0.75rem;
+      border-radius: 10px;
+      color: var(--text);
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .content {
+      margin-left: 300px;
+      padding: 42px 30px 64px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    section {
+      scroll-margin-top: 24px;
+      margin-bottom: 46px;
+      background: transparent;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 2.3vw, 2.5rem);
+      margin: 0 0 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+    }
+    h3 {
+      font-size: 1.3rem;
+      margin-top: 1.8rem;
+      margin-bottom: 0.6rem;
+      color: var(--primary);
+    }
+    h4 { margin: 1.2rem 0 0.45rem; }
+    p, li { font-size: 1.02rem; }
+    ul, ol { padding-left: 1.2rem; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+      gap: 18px;
+      margin: 18px 0 26px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+    }
+    .card strong {
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      color: var(--primary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      vertical-align: top;
+    }
+    th {
+      background: var(--panel-alt);
+      text-align: left;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    .code-block {
+      position: relative;
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 14px 0 18px;
+      box-shadow: var(--shadow);
+    }
+    .code-block pre {
+      margin: 0;
+      padding: 18px 18px 20px;
+      overflow: auto;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+    .copy-btn {
+      position: absolute;
+      right: 14px; top: 12px;
+      background: rgba(148,163,184,0.2);
+      color: #e2e8f0;
+      border: 1px solid rgba(148,163,184,0.3);
+      border-radius: 8px;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: rgba(148,163,184,0.35); }
+    .os-switch {
+      display: flex; gap: 10px; margin: 1rem 0 0.6rem; flex-wrap: wrap;
+    }
+    .os-switch button {
+      padding: 0.65rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .os-switch button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .os-panel {
+      display: none;
+    }
+    .os-panel.active { display: block; }
+    .output-box, .callout {
+      border-left: 4px solid var(--primary);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left-width: 5px;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+    }
+    .output-box strong { color: var(--primary); }
+    .callout.tip { border-left-color: var(--success); }
+    .callout.warn { border-left-color: var(--warning); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout.test { border-left-color: var(--accent); }
+    .kicker { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+    .diagram-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 18px;
+      overflow: auto;
+      box-shadow: var(--shadow);
+    }
+    svg { width: 100%; height: auto; min-height: 320px; }
+    .note-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .theme-toggle {
+      position: fixed; right: 18px; top: 18px; z-index: 20;
+    }
+    .theme-toggle button {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 980px) {
+      .sidebar {
+        position: static; width: 100%; border-right: none; border-bottom: 1px solid var(--border);
+      }
+      .content { margin-left: 0; padding-top: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-toggle">
+    <button id="themeToggle" type="button">🌙 Koyu tema</button>
+  </div>
+
+  <aside class="sidebar">
+    <h1>Kafka + Rancher Desktop<br />Uygulamalı Eğitim</h1>
+    <nav>
+      <ul>
+        <li><a href="#proje-mimarisi">1. Proje Mimarisi</a></li>
+        <li><a href="#giris">2. Giriş</a></li>
+        <li><a href="#kavramlar">3. Kavramlar</a></li>
+        <li><a href="#rancher-kurulumu">4. Rancher Desktop</a></li>
+        <li><a href="#kafka-temelleri">5. Kafka Temelleri</a></li>
+        <li><a href="#kod-analizi">6. Kod Analizi</a></li>
+        <li><a href="#compose-kubernetes">7. Compose → Kubernetes</a></li>
+        <li><a href="#imajlar-ve-yayinlama">8. İmajlar ve Dağıtım</a></li>
+        <li><a href="#pod-yonetimi">9. Pod Yönetimi</a></li>
+        <li><a href="#erisim-ve-test">10. Erişim ve Test</a></li>
+        <li><a href="#gözlemlenebilirlik">11. Gözlemlenebilirlik</a></li>
+        <li><a href="#sorun-giderme">12. Sorun Giderme</a></li>
+        <li><a href="#temizlik">13. Temizlik</a></li>
+        <li><a href="#ozet">14. Özet ve Alıştırmalar</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <div class="container">
+      <section id="proje-mimarisi">
+        <h2>Proje Mimarisi</h2>
+        <p>Bu workspace analiz edildiğinde gerçekte bir Spring Boot + Kafka laboratuvarı görüyoruz. Ana bileşenler şunlar:</p>
+        <div class="summary-grid">
+          <div class="card">
+            <strong>Order</strong>
+            <div>Spring Boot 4.1.1, Java 17, Kafka producer, HTTP REST endpoint, <span class="note-code">OrderController</span>, <span class="note-code">OrderEventPublisher</span>, <span class="note-code">OrderEvent</span>.</div>
+          </div>
+          <div class="card">
+            <strong>Consumer</strong>
+            <div>Spring Boot 4.1.1, Java 17, Kafka consumer, <span class="note-code">OrderEventConsumer</span>, retry/DLT konfigürasyonu, Actuator metrikleri.</div>
+          </div>
+          <div class="card">
+            <strong>Kafka Broker</strong>
+            <div><span class="note-code">apache/kafka:4.3.1</span>, <span class="note-code">KRaft</span> modunda çalışıyor, <span class="note-code">orders.events</span> ve <span class="note-code">orders.eventsx</span> topic'leri oluşturuluyor.</div>
+          </div>
+          <div class="card">
+            <strong>Observability</strong>
+            <div>JMX exporter, Kafka exporter, Prometheus ve Grafana. Dashboard tanımı mevcut.</div>
+          </div>
+        </div>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 1100 420" xmlns="http://www.w3.org/2000/svg" aria-label="Proje mimari diyagramı">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f6bed"/></marker>
+            </defs>
+            <rect x="20" y="80" width="180" height="180" rx="18" fill="#dfeaff" stroke="#4f6bed" stroke-width="2"/>
+            <text x="110" y="125" text-anchor="middle" font-size="24" font-weight="700" fill="#1d2f5f">Order</text>
+            <text x="110" y="160" text-anchor="middle" font-size="18" fill="#1d2f5f">Spring Boot</text>
+            <text x="110" y="190" text-anchor="middle" font-size="18" fill="#1d2f5f">:8090</text>
+
+            <rect x="450" y="50" width="220" height="240" rx="22" fill="#eafaf5" stroke="#23967a" stroke-width="2"/>
+            <text x="560" y="100" text-anchor="middle" font-size="24" font-weight="700" fill="#174d41">Kafka Broker</text>
+            <text x="560" y="140" text-anchor="middle" font-size="18" fill="#174d41">apache/kafka:4.3.1</text>
+            <text x="560" y="180" text-anchor="middle" font-size="18" fill="#174d41">KRaft</text>
+            <text x="560" y="210" text-anchor="middle" font-size="18" fill="#174d41">orders.events</text>
+            <text x="560" y="240" text-anchor="middle" font-size="18" fill="#174d41">3 partitions</text>
+
+            <rect x="780" y="80" width="180" height="180" rx="18" fill="#e3f7ea" stroke="#1e7f4d" stroke-width="2"/>
+            <text x="870" y="125" text-anchor="middle" font-size="24" font-weight="700" fill="#16482f">Consumer</text>
+            <text x="870" y="160" text-anchor="middle" font-size="18" fill="#16482f">Spring Boot</text>
+            <text x="870" y="190" text-anchor="middle" font-size="18" fill="#16482f">:8095</text>
+
+            <rect x="150" y="330" width="240" height="60" rx="12" fill="#fff2cf" stroke="#d88d18" stroke-width="2"/>
+            <text x="270" y="366" text-anchor="middle" font-size="18" fill="#8a5807">Kafka UI :8080</text>
+
+            <rect x="470" y="330" width="240" height="60" rx="12" fill="#eff4ff" stroke="#4f6bed" stroke-width="2"/>
+            <text x="590" y="366" text-anchor="middle" font-size="18" fill="#1d2f5f">Prometheus :9090</text>
+
+            <rect x="790" y="330" width="230" height="60" rx="12" fill="#fce9e8" stroke="#d24838" stroke-width="2"/>
+            <text x="905" y="366" text-anchor="middle" font-size="18" fill="#902b21">Grafana :3000</text>
+
+            <path d="M200 170 H450" stroke="#4f6bed" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M670 170 H780" stroke="#23967a" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M270 260 V330" stroke="#d88d18" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M590 290 V330" stroke="#4f6bed" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M905 260 V330" stroke="#d24838" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+          </svg>
+        </div>
+
+        <h3>Docker Compose analizi</h3>
+        <table>
+          <thead>
+            <tr><th>Servis</th><th>Image / Konum</th><th>Port / Etki Alanı</th><th>Önemli Bilgi</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>broker</td><td>apache/kafka:4.3.1</td><td>9092:9092</td><td>Producer/consumer bağlantısı için broker; KRaft modu; JMX açık.</td></tr>
+            <tr><td>kafka-init</td><td>apache/kafka:4.3.1</td><td>—</td><td><span class="note-code">orders.events</span> ve <span class="note-code">orders.eventsx</span> topic'lerini 3 partition, RF=1 ile oluşturur.</td></tr>
+            <tr><td>order</td><td>Order/Dockerfile</td><td>8090:8090</td><td>HTTP POST /orders/add yayın yapar.</td></tr>
+            <tr><td>consumer</td><td>Consumer/Dockerfile</td><td>8095:8095</td><td><span class="note-code">@KafkaListener</span> ile okur; concurrency=3.</td></tr>
+            <tr><td>kafka-ui</td><td>ghcr.io/kafbat/kafka-ui</td><td>8080:8080</td><td>Topic ve consumer group görselleştirme.</td></tr>
+            <tr><td>jmx-exporter</td><td>observability/jmx-exporter/Dockerfile</td><td>9404:9404</td><td>Kafka JMX metrikleri Prometheus'a açar.</td></tr>
+            <tr><td>kafka-exporter</td><td>danielqsj/kafka-exporter:v1.9.0</td><td>9308:9308</td><td>Consumer lag ve broker metrikleri.</td></tr>
+            <tr><td>prometheus</td><td>prom/prometheus:v3.2.1</td><td>9090:9090</td><td>Scrape hedefleri: order, consumer, broker, kafka-exporter.</td></tr>
+            <tr><td>grafana</td><td>grafana/grafana:11.5.2</td><td>3000:3000</td><td>Prometheus datasource ve Kafka dashboard'ı.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="giris">
+        <h2>1. Giriş ve Eğitimin Amacı</h2>
+        <p>Bu eğitim, bir yazılımcı grubuna “Kafka’yı ve Kubernetes’i birlikte düşünerek uygulamayı taşıma” fikrini anlatıyor. Öğrenme hedefi: Docker Compose ile çalışan bir Kafka laboratuvarını Rancher Desktop + k3s ortamına taşımak, pod’lara dağıtmak, izlemek, ölçeklendirmek ve olay akışını kavramak.</p>
+        <div class="card">
+          <div class="kicker">Kazanımlar</div>
+          <ul>
+            <li>Rancher Desktop kurulumunu ve k3s yapısını anlayacaksınız.</li>
+            <li>Kafka broker, topic, partition, consumer group kavramlarını günlük dille ve örnekle öğreneceksiniz.</li>
+            <li>Spring Boot producer/consumer uygulamasını Kubernetes’e taşıyacaksınız.</li>
+            <li>Pod, Service, PVC, Deployment, StatefulSet, Probe, Secret, ConfigMap, Job kavramlarını konuşma diliyle öğrenip uygulayacaksınız.</li>
+            <li>Prometheus/Grafana ile observability ve sorun giderme pratiği yapacaksınız.</li>
+          </ul>
+        </div>
+        <div class="callout tip"><strong>💡 İpucu:</strong> Bu eğitimde “container” ve “pod” arasındaki farkın net olması çok önemlidir. Container tek uygulama kapsülüdür; pod ise tek bir ağ kimliğiyle birlikte çalışan kapsüllerin bir araya gelmesidir.</div>
+        <p>Ön koşul: Java 17, Maven, Docker veya nerdctl, kubectl, temel Linux terminal bilgisi. Tahmini süre: 2–3 saat anlatım + 1–2 saat pratik ekip çalışması.</p>
+      </section>
+
+      <section id="kavramlar">
+        <h2>2. Kavramlar (sıfırdan)</h2>
+        <table>
+          <thead><tr><th>Kavram</th><th>Kolay anlatım</th><th>Docker Compose karşılığı</th><th>Kubernetes benzetmesi</th></tr></thead>
+          <tbody>
+            <tr><td>Container</td><td>Uygulamanın hafif, izole edilmiş çalıştığı kap.</td><td>Service başına bir container</td><td>Pod’un içinde çalışan tek kapsül</td></tr>
+            <tr><td>Image</td><td>Container’ı çalıştırmaya hazır şablon</td><td><span class="note-code">build:</span>, <span class="note-code">image:</span></td><td>Artifact; pod bir imajın örneğidir</td></tr>
+            <tr><td>Pod</td><td>En küçük çalıştırılabilir küme birimi</td><td>Tek servis gibi düşünebilirsiniz</td><td>Tek ağ adresi, tek yaşam döngüsü</td></tr>
+            <tr><td>Deployment</td><td>İstediğimiz replica sayısını korur</td><td>Compose service, ama scale ve rollout var</td><td>Uygulama sürüm yönetimi</td></tr>
+            <tr><td>StatefulSet</td><td>Durumlu verinin tek tek isimlendirilmiş pod’larda kalması</td><td>Veri/volume eklenmiş bir servis</td><td>Kafka broker için ideal</td></tr>
+            <tr><td>Service</td><td>Pod’ların ağ adresi</td><td>Port mapping</td><td>Stable endpoint / Load Balancer gibi</td></tr>
+            <tr><td>ConfigMap</td><td>Yapılandırma metinleri</td><td>Environment değerleri</td><td>Uygulama config’i</td></tr>
+            <tr><td>Secret</td><td>Şifre ve gizli veriler</td><td>.env / docker secrets</td><td>Grafana admin şifresi gibi</td></tr>
+            <tr><td>PVC</td><td>Kalıcı disk talebi</td><td>Named volume</td><td>Kafka verisi ve grafana/prometheus state’i</td></tr>
+            <tr><td>Job</td><td>Bir defalık iş</td><td><span class="note-code">kafka-init</span> gibi tek seferlik operasyon</td><td>Topic oluşturma işi</td></tr>
+            <tr><td>Namespace</td><td>İsim alanı, izolasyon</td><td>Proje bazlı ağ ayrımı</td><td><span class="note-code">kafka-lab</span> namespace</td></tr>
+            <tr><td>Probe</td><td>Kubernetes’in ayakta mı / hazır mı kontrolü</td><td>Compose healthcheck</td><td>Readiness/Liveness</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn"><strong>⚠️ Dikkat:</strong> Pod ve container aynı şey değildir. Pod statik olarak “aynı amaç için bir araya gelmiş kapsül grubu”dır. Kafka broker için StatefulSet ismi, pod ismi ve DNS adresi (örnek: kafka-0.kafka-headless.kafka-lab.svc.cluster.local) çok önemlidir.</div>
+
+        <h3>Spring Boot için benzetme</h3>
+        <ul>
+          <li>Spring Boot uygulaması = iş yükü.</li>
+          <li>Deployment = “bunu 3 örnek çalıştıralım” fikri.</li>
+          <li>Service = “uygulamaya sabit ağ adı verelim” fikri.</li>
+          <li>ConfigMap = “spring.kafka.bootstrap-servers gibi ayarı dışarıdan verelim” fikri.</li>
+          <li>Secret = “grafana admin şifresi gibi hukuka uygun ama dışarıdan görünmemeli” fikri.</li>
+          <li>StatefulSet = “her broker pod’unun adı ve verisi sabit kalsın” fikri.</li>
+        </ul>
+      </section>
+
+      <section id="rancher-kurulumu">
+        <h2>3. Rancher Desktop Kurulumu</h2>
+        <div class="os-switch" aria-label="İşletim sistemi sekmeleri">
+          <button class="os-tab active" data-target="macos">macOS</button>
+          <button class="os-tab" data-target="windows">Windows</button>
+        </div>
+
+        <div class="os-panel active" id="macos">
+          <h3>macOS (Apple Silicon M4)</h3>
+          <ol>
+            <li>Rancher Desktop indirip kurun. <span class="note-code">https://rancherdesktop.io</span></li>
+            <li>“Container Engine” olarak <strong>dockerd (moby)</strong> veya <strong>containerd (nerdctl)</strong> seçeneğini belirleyin.</li>
+            <li>Kubernetes sürümünü “v1.30.x” civarı bir LTS/kararlı sürüm seçin; burada projenin çalışma prensibi daha önemlidir.</li>
+            <li>Kaynak olarak en az <strong>4 CPU / 8 GB RAM</strong> önerilir; Kafka + Prometheus + Grafana + Java uygulamaları bir arada çalıştığı için bu değer faydalıdır.</li>
+          </ol>
+          <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl version --client
+ekubectl version
+kubectl get nodes
+kubectl get pods -A
+</code></pre></div>
+          <div class="output-box"><strong>Beklenen çıktı:</strong><pre>Client Version: v1.31.x
+NAME          STATUS   ROLES   AGE   VERSION
+rd-node-0     Ready    control-plane   21m   v1.30.x</pre></div>
+          <div class="callout warn"><strong>⚠️ Dikkat:</strong> Mac M4’te arm64 imaj uyumsuzluğu çok sık görülür. JDK ve Kafka imajları ARM64’e göre önceden uyumlu olmalı ya da uygun multi-arch imaj seçilmeli.</div>
+        </div>
+
+        <div class="os-panel" id="windows">
+          <h3>Windows (WSL2)</h3>
+          <ol>
+            <li>WSL2 etkinleştirildiğinden emin olun: <span class="note-code">wsl --install</span></li>
+            <li>Rancher Desktop’ta WSL2 backend’ini seçin.</li>
+            <li>Yeterli RAM ve CPU ayarlayın; Kafka + Grafana + Prometheus bir arada açıldığında kaynak yetersizliği oluşur.</li>
+            <li>Docker ve nerdctl ikilisini aynı anda kullanacaksanız, engine seçimini not alın.</li>
+          </ol>
+          <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-powershell">wsl --status
+kubectl version --client
+kubectl get nodes
+</code></pre></div>
+          <div class="output-box"><strong>Beklenen çıktı:</strong><pre>Default Distribution: Ubuntu
+Client Version: v1.31.x</pre></div>
+          <div class="callout tip"><strong>💡 İpucu:</strong> Windows’ta WSL2 hafızası yetersiz kalırsa Kubernetes pod’ları “Pending” veya “CrashLoopBackOff” döner. Bu durumda kaynak limitleri düşürülür, bazen WSL2 hafızası artırılır.</div>
+        </div>
+
+        <h3>Doğrulama</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl version --output=yaml
+kubectl get nodes -o wide
+kubectl get pods -A
+</code></pre></div>
+        <div class="output-box"><strong>Bu komut ne yapıyor?</strong> Kubernetes kümesinin çalıştığını, node’ların Ready olduğunu ve pod’ların sıcaklığını gösterir. Eğer bu komut hata verirse, Rancher Desktop’ın Kubernetes tarafı başlatılmamıştır.</div>
+      </section>
+
+      <section id="kafka-temelleri">
+        <h2>4. Kafka Temelleri (konunun kalbi)</h2>
+        <p>Kafka, “Olay akışı / event streaming” için tasarlanmış bir mesajlaşma ve veri akışı platformudur. Bir request/response çağrısı ile karşılaştırırsak:</p>
+        <table>
+          <thead><tr><th>Request/Response</th><th>Event-driven</th></tr></thead>
+          <tbody>
+            <tr><td>Hemen cevap beklenir</td><td>Mesaj teslimi asenkron olur</td></tr>
+            <tr><td>Önce istemci, sonra server</td><td>Producer ve consumer birbirine ihtiyaç duymaz</td></tr>
+            <tr><td>Bağlantı, darboğaz ve gecikme</td><td>Arabelleğe alma ve buffering</td></tr>
+            <tr><td>Monolitik akış</td><td>Bağımsız servisler ve ölçeklenme</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Broker, topic, partition, offset</h3>
+        <ul>
+          <li><strong>Broker</strong>: Kafka sunucusu, mesajları yazan ve tüketen düğüm.</li>
+          <li><strong>Topic</strong>: Mesaj akışı adı. Örnek: <span class="note-code">orders.events</span></li>
+          <li><strong>Partition</strong>: Bir topic’in paralel taşıyıcıları. Aynı topic’in aynı key’i taşıyan mesajları aynı partition’a götürür.</li>
+          <li><strong>Offset</strong>: Her partition içinde mesajın sırası. Consumer, “ben bu offset’tan itibaren okumaya devam” der.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg" aria-label="Mesaj akışı diyagramı">
+            <rect x="40" y="100" width="160" height="110" rx="16" fill="#dfeaff" stroke="#4f6bed" stroke-width="2"/>
+            <text x="120" y="145" text-anchor="middle" fill="#1d2f5f" font-size="20" font-weight="700">Producer</text>
+            <text x="120" y="175" text-anchor="middle" fill="#1d2f5f" font-size="18">key=ORDER-1</text>
+            <rect x="250" y="40" width="150" height="230" rx="16" fill="#eff7ff" stroke="#7d8ab3" stroke-width="2"/>
+            <text x="325" y="75" text-anchor="middle" fill="#2a3f68" font-size="18" font-weight="700">Topic</text>
+            <rect x="270" y="95" width="110" height="28" fill="#d2eaf0"/><text x="325" y="114" text-anchor="middle" fill="#174d41">P0</text>
+            <rect x="270" y="130" width="110" height="28" fill="#d2eaf0"/><text x="325" y="149" text-anchor="middle" fill="#174d41">P1</text>
+            <rect x="270" y="165" width="110" height="28" fill="#d2eaf0"/><text x="325" y="184" text-anchor="middle" fill="#174d41">P2</text>
+            <rect x="455" y="100" width="150" height="110" rx="16" fill="#eafaf5" stroke="#23967a" stroke-width="2"/>
+            <text x="530" y="145" text-anchor="middle" fill="#174d41" font-size="20" font-weight="700">Consumer</text>
+            <text x="530" y="175" text-anchor="middle" fill="#174d41" font-size="18">group: order-processor</text>
+            <rect x="670" y="100" width="180" height="110" rx="16" fill="#fff4db" stroke="#d88d18" stroke-width="2"/>
+            <text x="760" y="145" text-anchor="middle" fill="#7a4f00" font-size="20" font-weight="700">Partition</text>
+            <text x="760" y="175" text-anchor="middle" fill="#7a4f00" font-size="18">same key → same partition</text>
+            <path d="M200 155 H250" stroke="#4f6bed" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M400 155 H455" stroke="#23967a" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+            <path d="M605 155 H670" stroke="#d88d18" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+          </svg>
+        </div>
+
+        <h3>Partition ve consumer group</h3>
+        <p>Bu projede topic <span class="note-code">orders.events</span> 3 partition’a sahiptir. Consumer group <span class="note-code">order-processor</span> olarak tanımlıdır. Bu durumda en fazla 3 consumer aynı anda eşzamanlı partition’ları paralel işleyebilir. Dördüncü consumer ise boşta kalır çünkü 3 partition vardır ve Kafka her partition için tek bir consumer assignment yapar.</p>
+        <div class="callout test"><strong>🧪 Deneyin:</strong> Bir topic 3 partition, consumer group 4 pod ⇒ en fazla 3 pod aktif, 1 pod boşta kalır. Bu yüzden “consumer 4’un neden boşta?” sorusu burada net çözülür.</div>
+
+        <h3>Delivery guarantees</h3>
+        <ul>
+          <li><strong>At-most-once:</strong> Mesaj alınır ama commit / işleme garantisi yok.</li>
+          <li><strong>At-least-once:</strong> Mesaj en az bir kez işlenir; duplicate olabilir.</li>
+          <li><strong>Exactly-once:</strong> Daha zordur; idempotent writer + transactional processing gerektirir.</li>
+        </ul>
+        <p>Bu proje, <span class="note-code">enable.idempotence: true</span> ve <span class="note-code">read_committed</span> ile daha güvenilir davranış sağlar. Consumer tarafında manual ack kullanılıyor: <span class="note-code">acknowledge()</span> çağrılmadan mesaj commit edilmez.</p>
+      </section>
+
+      <section id="kod-analizi">
+        <h2>5. Projenin Kod Analizi: Kafka ile İlgili Sınıflar</h2>
+        <p>Bu bölümde çalıştığımız gerçek sınıfları ve ilişkilerini inceliyoruz. Her biri koddan doğrulanan sınıf/yöntem bilgilerini kullanır.</p>
+
+        <h3>Order / OrderController</h3>
+        <p>Dosya: <span class="note-code">Order/src/main/java/com/works/OrderController.java</span>. Bu sınıf HTTP endpoint sağlar.</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">@Controller
+@RequestMapping("orders")
+public class OrderController {
+    private final OrderEventPublisher orderEventPublisher;
+
+    @PostMapping("add")
+    public ResponseEntity<Void> addOrder(@RequestParam String orderId,
+                                        @RequestParam(defaultValue = "CREATED") String status) {
+        if (orderId == null || orderId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        orderEventPublisher.publish(orderId, status)
+            .thenAccept(result -> System.out.println("Order event published successfully for orderId: " + orderId))
+            .exceptionally(ex -> {
+                System.err.println("Failed to publish order event for orderId: " + orderId + ", error: " + ex.getMessage());
+                return null;
+            });
+        return ResponseEntity.accepted().build();
+    }
+}</code></pre></div>
+        <p>Özeti: request kabul edilir, sonra üretim başlatılır, HTTP 202 Accepted dönülür. Asenkron mesajlaşma burada görülür.</p>
+        <div class="callout warn"><strong>⚠️ Dikkat:</strong> Bu kod “başarıyı” HTTP yanıtında değil, Kafka publish sonucunda raporlar. Bu yüzden “çok geç yanıt” gibi durumlar yaşanabilir, fakat sistem asenkron çalışır.</div>
+        <p>Öğrenciye soru: “Neden 202 Accepted döndürüldü? Bu, broker’a yazılma işlemini beklemiyor mu?”</p>
+
+        <h3>Order / OrderEventPublisher</h3>
+        <p>Dosya: <span class="note-code">Order/src/main/java/com/works/OrderEventPublisher.java</span>. Producer tarafı.</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">@Service
+public class OrderEventPublisher {
+    private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
+
+    public CompletableFuture&lt;SendResult&lt;String, OrderEvent&gt;&gt; publish(String orderId, String status) {
+        var event = new OrderEvent(orderId, status, Instant.now());
+        return kafkaTemplate.send("orders.events", orderId, event)
+            .whenComplete((result, error) -> {
+                if (error != null) {
+                    System.err.println("Kafka publish failed: " + error.getMessage());
+                } else {
+                    var metadata = result.getRecordMetadata();
+                    System.out.printf("Published topic=%s partition=%d offset=%d%n",
+                        metadata.topic(), metadata.partition(), metadata.offset());
+                }
+            });
+    }
+}</code></pre></div>
+        <p>Burada <span class="note-code">KafkaTemplate.send("orders.events", orderId, event)</span> çağrısı yapılır. Key olarak orderId verilir; bu aynı key aynı partition’a demektir. Böylece aynı sipariş akışı aynı partition üzerinde sıralı ilerler.</p>
+        <p>Öğrenciye soru: “Bu key neden orderId?”</p>
+
+        <h3>Order / OrderEvent</h3>
+        <p>Dosya: <span class="note-code">Order/src/main/java/com/works/OrderEvent.java</span> ve Consumer tarafı aynı isimle mevcut. Şimdi Java record kullanımı:</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">public record OrderEvent(String orderId, String status, Instant occurredAt) {}</code></pre></div>
+        <p>Bu event, JSON olarak serializable hale gelir. <span class="note-code">JsonSerializer</span> ve <span class="note-code">JsonDeserializer</span> kullanılır. record, null-safe bir veri taşıyıcısıdır.</p>
+
+        <h3>Order / KafkaTopics</h3>
+        <p>Dosya: <span class="note-code">Order/src/main/java/com/works/KafkaTopics.java</span> ve Consumer tarafında benzeri.</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">@Configuration
+public class KafkaTopics {
+    @Bean
+    NewTopic ordersTopic() {
+        return TopicBuilder.name("orders.events")
+                .partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    NewTopic ordersDltTopic() {
+        return TopicBuilder.name("orders.events.DLT")
+                .partitions(3).replicas(1).build();
+    }
+}</code></pre></div>
+        <div class="callout danger"><strong>❌ Sık yapılan hata:</strong> Docker Compose dosyasındaki topic oluşturma komutu <span class="note-code">orders.eventsx</span> yazarken, Java tarafında DLT ismi <span class="note-code">orders.events.DLT</span> şeklindedir. Bu bir çelişkidir. Bu durumda infra ve uygulama tarafı arasında “tek doğru topic adlandırması” anlaşması gerekir; laboratuvarda açıkça not edilmelidir.</div>
+
+        <h3>Consumer / OrderEventConsumer</h3>
+        <p>Bu sınıf <span class="note-code">@KafkaListener</span> ile mesaj dinler. Dosya: <span class="note-code">Consumer/src/main/java/com/works/OrderEventConsumer.java</span>.</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">@KafkaListener(topics = "orders.events", groupId = "order-processor", concurrency = "3")
+public void receive(ConsumerRecord&lt;String, OrderEvent&gt; record, Acknowledgment acknowledgment) {
+    try {
+        Thread.sleep(3000);
+        var event = record.value();
+        acknowledgment.acknowledge();
+    } catch (Exception e) {
+        throw new RuntimeException("Failed to process order event", e);
+    }
+}</code></pre></div>
+        <p>Özellikler:</p>
+        <ul>
+          <li><span class="note-code">topics = "orders.events"</span>: dinlenecek topic.</li>
+          <li><span class="note-code">groupId = "order-processor"</span>: aynı consumer group.</li>
+          <li><span class="note-code">concurrency = "3"</span>: 3 thread paralel çalışma.</li>
+          <li><span class="note-code">Acknowledgment</span>: manual commit için kullanılıyor.</li>
+          <li><span class="note-code">Thread.sleep(3000)</span>: iş yükünün 3 saniye sürmesini simüle eder.</li>
+        </ul>
+        <div class="callout tip"><strong>💡 İpucu:</strong> Burada aynı grup için 3 consumer pod çalıştırıldığında Kafka partition ataması yapılır. Her partition sadece tek bir consumer’a atanır; aynı consumer birden çok partition’a bakabilir ama tek partition birden çok consumer’a verilemez.</div>
+
+        <h3>application.yaml açıklaması</h3>
+        <table>
+          <thead><tr><th>Özellik</th><th>Anlamı</th></tr></thead>
+          <tbody>
+            <tr><td><span class="note-code">spring.kafka.bootstrap-servers</span></td><td>Broker adresi. Compose zamanında <span class="note-code">broker:19092</span>.</td></tr>
+            <tr><td><span class="note-code">producer.acks</span></td><td>Mesajın yazılma güveni. <span class="note-code">all</span> = leader + follower’dan onay.</td></tr>
+            <tr><td><span class="note-code">producer.retries</span></td><td>Yazma sırasında tekrar deneme sayısı.</td></tr>
+            <tr><td><span class="note-code">producer.properties.enable.idempotence</span></td><td>Yinelenen mesajları önler.</td></tr>
+            <tr><td><span class="note-code">consumer.group-id</span></td><td>Consumer group adı. Aynı mesajı kaç podun alacağını belirler.</td></tr>
+            <tr><td><span class="note-code">consumer.auto-offset-reset</span></td><td>Yeni grup için ilk offset nereden başlayacak? <span class="note-code">earliest</span> anlamı en baştan başla.</td></tr>
+            <tr><td><span class="note-code">consumer.enable-auto-commit</span></td><td><span class="note-code">false</span> çünkü manual acknowledge kullanıyoruz.</td></tr>
+            <tr><td><span class="note-code">listener.ack-mode</span></td><td>Manual commit modu.</td></tr>
+            <tr><td><span class="note-code">management.endpoints.web.exposure.include</span></td><td>Actuator endpoint’leri açar.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Hata yönetimi ve DLT</h3>
+        <p>Java tarafında <span class="note-code">KafkaErrorConfiguration</span> kullanılmıştır. DLT kavramı: işlemesi başarısız olan mesajları ayrı bir dead-letter topic’e yazmaktır.</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-java">var recoverer = new DeadLetterPublishingRecoverer(template, (record, exception) -&gt;
+    new TopicPartition(record.topic() + ".DLT", record.partition()));
+return new DefaultErrorHandler(recoverer, new FixedBackOff(1_000L, 2L));</code></pre></div>
+        <p>Buradaki amaç, “hatayı sürekli tekrar döndürmek yerine, en sonunda bir DLT’ye alıp operasyonel müdahale için ayırmak”tır.</p>
+      </section>
+
+      <section id="compose-kubernetes">
+        <h2>6. Docker Compose → Kubernetes Dönüşümü</h2>
+        <p>İnceleyelim. Compose tarafında servisler şu şekilde çalışıyor:</p>
+        <table>
+          <thead><tr><th>Compose</th><th>Kubernetes karşılığı</th><th>Neden?</th></tr></thead>
+          <tbody>
+            <tr><td>broker</td><td>StatefulSet + headless Service + ClusterIP Service</td><td>Kafka verisini kalıcı tutmak ve sabit DNS adı vermek için</td></tr>
+            <tr><td>kafka-init</td><td>Job + initContainer</td><td>Tek seferlik topic oluşturma işi</td></tr>
+            <tr><td>order</td><td>Deployment + Service</td><td>Producer uygulaması ölçeklenebilir olmalı</td></tr>
+            <tr><td>consumer</td><td>Deployment + Service</td><td>Consumer uygulaması da rollback / scale edilebilir</td></tr>
+            <tr><td>kafka-ui</td><td>Deployment + Service</td><td>Arayüz üzerinden topic görünümü</td></tr>
+            <tr><td>volumes</td><td>PVC + local-path</td><td>Persistent data</td></tr>
+            <tr><td>depends_on: service_healthy</td><td>Probe + initContainer + retry</td><td>Kubernetes’te bu mantık doğrudan yoktur</td></tr>
+          </tbody>
+        </table>
+
+        <h3>advertised.listeners problemi</h3>
+        <p>Compose’da <span class="note-code">KAFKA_ADVERTISED_LISTENERS</span> şu şekilde çalışıyor:</p>
+        <ul>
+          <li>Producer/consumer yerel bilgisayardan bağlanıyorsa: <span class="note-code">localhost:9092</span></li>
+          <li>Container içinden bağlanıyorsa: <span class="note-code">broker:19092</span></li>
+        </ul>
+        <p>Kubernetes’te bunun tek yönde çözümü yoktur; çünkü aynı broker için hem pod içi DNS hem de dışarıdan port-forward erişimi ayrı adreslerle çalışmalıdır. Bu yüzden işin doğru modeli şudur:</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-yaml">KAFKA_LISTENERS: "CONTROLLER://:29093,INTERNAL://:19092,CLIENT://:9092"
+KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-0.kafka-headless.kafka-lab.svc.cluster.local:19092,CLIENT://localhost:9092"
+KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+</code></pre></div>
+        <p>Kısacası:</p>
+        <ul>
+          <li>Cluster içi uygulama: <span class="note-code">kafka:19092</span> veya <span class="note-code">kafka-0.kafka-headless.kafka-lab.svc.cluster.local:19092</span></li>
+          <li>Dışarıdan port-forward ile lokal bilgisayardan: <span class="note-code">localhost:9092</span></li>
+        </ul>
+        <div class="callout danger"><strong>❌ Sık yapılan hata:</strong> Broker üretim tarafında <span class="note-code">kafka:9092</span> gibi bir listener açılsa ama broker <span class="note-code">localhost:9092</span> reklam yapsa, client bağlantıyı kurar ama sonra “Connection refused”, “timeout”, “leader not available” gibi hatalar görür. Çünkü client metadata’da reklam edilen adrese bağlanmaya çalışır.</div>
+
+        <h3>depends_on’ın Kubernetes karşılığı</h3>
+        <p>Compose’daki <span class="note-code">depends_on: service_healthy</span> ifadesi, Kubernetes’te doğrudan yoktur. Orada karşılığı:</p>
+        <ul>
+          <li>readinessProbe / livenessProbe</li>
+          <li>initContainer ile broker hazır olana kadar bekleme</li>
+          <li>uygulama tarafında retry / backoff</li>
+        </ul>
+        <p>Bu yüzden <span class="note-code">kafka-init-job.yaml</span> içinde initContainer çalışır; broker hazır olana kadar bekler; sonra topic oluşturma çalıştırılır.</p>
+
+        <h3>Compose volume’dan PVC’ye</h3>
+        <p>Compose’da <span class="note-code">kafka-data:/var/lib/kafka/data</span> var. Kubernetes’te buna karşılık PVC gelir. Rancher Desktop üzerinde default StorageClass genellikle <span class="note-code">local-path</span> olur. Bu yüzden:</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-yaml">volumeClaimTemplates:
+  - metadata:
+      name: kafka-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 5Gi
+</code></pre></div>
+        <p>Bu, Kafka broker’ın verisini host üzerinde kalıcı tutar; pod silinip yeniden oluşsa bile verinin yeniden yüklenmesi beklenir.</p>
+      </section>
+
+      <section id="imajlar-ve-yayinlama">
+        <h2>7. İmajları Hazırlama ve Kümeye Dağıtma</h2>
+        <h3>Dockerfile analiz</h3>
+        <p>Order ve Consumer Dockerfile’leri aynıdır. Her ikisi de</p>
+        <ul>
+          <li><span class="note-code">maven:3.9-eclipse-temurin-17</span> ile build</li>
+          <li><span class="note-code">eclipse-temurin:17-jre</span> ile final image</li>
+          <li><span class="note-code">java -jar /app/app.jar</span> entrypoint</li>
+        </ul>
+
+        <div class="os-switch">
+          <button class="os-tab active" data-target="build-mac">macOS</button>
+          <button class="os-tab" data-target="build-win">Windows</button>
+        </div>
+
+        <div class="os-panel active" id="build-mac">
+          <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">docker build -t order:dev ./Order
+docker build -t consumer:dev ./Consumer
+kubectl apply -k k8s/
+</code></pre></div>
+        </div>
+        <div class="os-panel" id="build-win">
+          <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-powershell">docker build -t order:dev .\Order
+docker build -t consumer:dev .\Consumer
+kubectl apply -k k8s/
+</code></pre></div>
+        </div>
+
+        <h3>Docker ve nerdctl farkı</h3>
+        <p>Rancher Desktop, iki farklı alt motor kullanabilir:</p>
+        <table>
+          <thead><tr><th>Motor</th><th>İşlev</th><th>Not</th></tr></thead>
+          <tbody>
+            <tr><td>dockerd / moby</td><td>Docker CLI ile aynı amaç</td><td>Geleneksel Docker deneyimi</td></tr>
+            <tr><td>containerd / nerdctl</td><td>OCI konteynerleri, k8s ekosistemine yakın</td><td>Kubernetes tarafında daha doğal</td></tr>
+          </tbody>
+        </table>
+        <p>İki yol için örnek komutlar:</p>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash"># Docker path
+
+docker build -t order:dev ./Order
+docker build -t consumer:dev ./Consumer
+
+# nerdctl path
+nerdctl --namespace k8s.io build -t order:dev ./Order
+nerdctl --namespace k8s.io build -t consumer:dev ./Consumer
+</code></pre></div>
+        <div class="callout tip"><strong>💡 İpucu:</strong> Kubernetes’in görüntüyü yerelde bulması için image’ın çalışma kümesi (Rancher Desktop k3s namespace) içinde kullanıma hazır olması gerekir. Bu yüzden <span class="note-code">imagePullPolicy: IfNotPresent</span> mantıklı bir seçimdir: yerel görsel varsa kullan, yoksa sadece gerekiyorsa çek.</div>
+
+        <h3>Kümede dağıtım</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl get ns
+kubectl apply -k k8s/
+kubectl wait --for=condition=Ready pod -l app=kafka -n kafka-lab --timeout=180s
+kubectl rollout status deployment/order -n kafka-lab
+kubectl rollout status deployment/consumer -n kafka-lab
+</code></pre></div>
+        <div class="output-box"><strong>Beklenen çıktı:</strong><pre>namespace/kafka-lab created
+statefulset.apps/kafka created
+job.batch/kafka-init created
+deployment.apps/order created
+deployment.apps/consumer created
+pod/kafka-0 condition met
+</pre></div>
+      </section>
+
+      <section id="pod-yonetimi">
+        <h2>8. Rancher ile Pod Yönetimi (uygulamalı)</h2>
+        <h3>Temel komutlar</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl get pods -n kafka-lab -o wide -w
+kubectl describe pod kafka-0 -n kafka-lab
+kubectl logs -f kafka-0 -n kafka-lab
+kubectl logs -n kafka-lab -l app=consumer --tail=100
+kubectl top pods -n kafka-lab
+kubectl get events -n kafka-lab --sort-by=.lastTimestamp
+</code></pre></div>
+        <p>Durumlar:</p>
+        <ul>
+          <li><strong>Pending</strong>: Scheduler pod’u yerleştirmeye çalışıyor.</li>
+          <li><strong>ContainerCreating</strong>: Image çekiliyor / container başlatılıyor.</li>
+          <li><strong>Running</strong>: Uygulama çalışıyor.</li>
+          <li><strong>CrashLoopBackOff</strong>: Uygulama sürekli çöküyor ve yeniden başlıyor.</li>
+          <li><strong>ImagePullBackOff</strong>: Görüntü yerelde yok, K8s çekemedi.</li>
+          <li><strong>Completed</strong>: Job tamamlandı.</li>
+        </ul>
+
+        <h3>Ölçekleme laboratuvarı</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl scale deployment consumer -n kafka-lab --replicas=1
+kubectl scale deployment consumer -n kafka-lab --replicas=3
+kubectl scale deployment consumer -n kafka-lab --replicas=4
+kubectl get pods -n kafka-lab -l app=consumer -o wide
+</code></pre></div>
+        <p>3 partition olduğu için 4. consumer boşta kalacaktır. Bu, Kafka consumer group mantığıyla doğrudan ilişkilidir. Rebalance’i log’lardan izleyebilirsiniz.</p>
+
+        <h3>Dayanıklılık laboratuvarı</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl delete pod -n kafka-lab -l app=consumer
+kubectl get pods -n kafka-lab -l app=consumer -w
+kubectl delete pod -n kafka-lab kafka-0
+kubectl get pvc -n kafka-lab
+</code></pre></div>
+        <p>Consumer silindiğinde Kubernetes otomatik yeniden oluşturur; offsetler ve düzenli commitler sayesinde mesajlar kesintisiz işlenmeye devam eder. Kafka pod’u silinirse, <span class="note-code">local-path</span> PVC sayesinde veri kalır.</p>
+
+        <h3>Rolling update</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl set image deployment/order -n kafka-lab order=order:dev-v2
+kubectl rollout status deployment/order -n kafka-lab
+kubectl rollout history deployment/order -n kafka-lab
+kubectl rollout undo deployment/order -n kafka-lab
+</code></pre></div>
+
+        <h3>Lag laboratuvarı</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl scale deployment consumer -n kafka-lab --replicas=0
+# ardından Order üretim çağrısı yapın
+curl -X POST 'http://localhost:8090/orders/add?orderId=ORDER-5001&status=CREATED'
+kubectl scale deployment consumer -n kafka-lab --replicas=1
+kubectl logs -n kafka-lab -l app=consumer --tail=100
+</code></pre></div>
+        <p>Lag için Grafana’da <span class="note-code">Consumer group lag</span> paneli izlenir. Consumer geri geldiğinde lag düşmeye başlar.</p>
+      </section>
+
+      <section id="erisim-ve-test">
+        <h2>9. Uygulamaya Erişim ve Test</h2>
+        <h3>Port-forward</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl port-forward svc/order 8090:8090 -n kafka-lab
+kubectl port-forward svc/consumer 8095:8095 -n kafka-lab
+kubectl port-forward svc/kafka-ui 8080:8080 -n kafka-lab
+kubectl port-forward svc/prometheus 9090:9090 -n kafka-lab
+kubectl port-forward svc/grafana 3000:3000 -n kafka-lab
+kubectl port-forward svc/kafka 9092:9092 -n kafka-lab
+</code></pre></div>
+
+        <h3>Order çağrısı</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">curl -i -X POST 'http://localhost:8090/orders/add?orderId=ORDER-1001&status=CREATED'
+</code></pre></div>
+        <div class="output-box"><strong>Beklenen çıktı:</strong><pre>HTTP/1.1 202 Accepted
+</pre></div>
+        <div class="output-box"><strong>Bu komut ne yapıyor?</strong> Order uygulaması, <span class="note-code">OrderEventPublisher</span> üzerinden <span class="note-code">orders.events</span> topic’ine mesaj yayınlar.</div>
+
+        <h3>Kafka CLI ile doğrulama</h3>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl exec -it -n kafka-lab pod/kafka-0 -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:19092 --list
+kubectl exec -it -n kafka-lab pod/kafka-0 -- /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:19092 --list
+kubectl exec -it -n kafka-lab pod/kafka-0 -- /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:19092 --topic orders.events
+</code></pre></div>
+        <p>Kafka UI’de topic, partition ve consumer group görünürlüğü kontrol edilir. Consumer logu da aynı anda izlenir.</p>
+      </section>
+
+      <section id="gözlemlenebilirlik">
+        <h2>10. Gözlemlenebilirlik</h2>
+        <table>
+          <thead><tr><th>Metrik</th><th>Ne anlama gelir?</th></tr></thead>
+          <tbody>
+            <tr><td><span class="note-code">kafka_consumergroup_lag</span></td><td>Consumer’ın topic üzerinde ne kadar geride kaldığını gösterir.</td></tr>
+            <tr><td><span class="note-code">kafka_server_replicamanager_underreplicatedpartitions</span></td><td>Replication eksikliği, broker sorunları.</td></tr>
+            <tr><td><span class="note-code">kafka_controller_kafkacontroller_offlinepartitionscount</span></td><td>Çalışmayan partition sayısı.</td></tr>
+            <tr><td><span class="note-code">kafka_server_bytesinpersec_total</span></td><td>Veri giriş hızı.</td></tr>
+            <tr><td><span class="note-code">kafka_server_messagesinpersec_total</span></td><td>Mesaj işleme hızı.</td></tr>
+          </tbody>
+        </table>
+        <p>Proje mevcut Prometheus target’leri:</p>
+        <ul>
+          <li>order:8090 /actuator/prometheus</li>
+          <li>consumer:8095 /actuator/prometheus</li>
+          <li>jmx-exporter:9404</li>
+          <li>kafka-exporter:9308</li>
+        </ul>
+      </section>
+
+      <section id="sorun-giderme">
+        <h2>11. Sorun Giderme Rehberi</h2>
+        <table>
+          <thead><tr><th>Belirti</th><th>Muhtemel neden</th><th>Teşhis</th><th>Çözüm</th></tr></thead>
+          <tbody>
+            <tr><td>Broker’a bağlanamıyorum</td><td>advertised.listeners yanlış</td><td><span class="note-code">kubectl logs -n kafka-lab pod/kafka-0</span></td><td>listener’ları internal/external için ayrı ayarla</td></tr>
+            <tr><td>ImagePullBackOff</td><td>Yerel imaj yok</td><td><span class="note-code">kubectl describe pod -n kafka-lab</span></td><td>docker build / nerdctl build, imagePullPolicy IfNotPresent</td></tr>
+            <tr><td>CrashLoopBackOff</td><td>Yerel ayar hatası, config sorun</td><td><span class="note-code">kubectl logs -f ...</span></td><td>Env, port ve readiness doğru olsun</td></tr>
+            <tr><td>PVC Pending</td><td>StorageClass yok</td><td><span class="note-code">kubectl get storageclass</span></td><td>local-path aktive edildi mi? kontrol et</td></tr>
+            <tr><td>Port-forward kesildi</td><td>Service/Pod sonlandı</td><td><span class="note-code">kubectl get pods -n kafka-lab</span></td><td>Service yeniden başlat / yönlendirme tekrar kur</td></tr>
+            <tr><td>ARM64 uyumsuzluk</td><td>Image multi-arch değil</td><td><span class="note-code">docker run --rm --platform linux/arm64 ...</span></td><td>ARM64 uyumlu imaj kullan</td></tr>
+            <tr><td>Consumer mesaj almıyor</td><td>group.id, offset reset, partition, pod ölçeklenme</td><td><span class="note-code">kubectl logs -n kafka-lab -l app=consumer</span></td><td>consumer group ve topic bilgisi kontrol et</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="temizlik">
+        <h2>12. Temizlik ve Sıfırlama</h2>
+        <div class="code-block"><button class="copy-btn" type="button">Kopyala</button><pre><code class="language-bash">kubectl delete -k k8s/
+kubectl get pvc -n kafka-lab
+kubectl delete pvc prometheus-data grafana-data kafka-data-0 -n kafka-lab
+kubectl delete namespace kafka-lab
+</code></pre></div>
+        <p>Rancher Desktop’ı sıfırlamak isterseniz, Desktop uygulamasından “Reset Kubernetes” veya WSL2 üzerinde ilgili makine imajlarını temizlemek gerekir. Özellikle PVC’ler ve local-path verileri silinmezse, yeni kuruluma eski veriler bulaşabilir.</p>
+      </section>
+
+      <section id="ozet">
+        <h2>13. Özet, Alıştırmalar ve Sınıf Soruları</h2>
+        <h3>Özet</h3>
+        <ul>
+          <li>Docker Compose ile çalışan app, Kafka broker ve observability stack’i Kubernetes’e taşındı.</li>
+          <li>Broker için StatefulSet + PVC + headless Service yapısı kullanıldı.</li>
+          <li>Order ve Consumer için Deployment + Service + readiness/liveness + ConfigMap kullanıldı.</li>
+          <li>Broker için advertised.listeners ve port-forward akışı doğru modellenmeye çalışıldı.</li>
+          <li>Prometheus ve Grafana ile uygulama + Kafka metrikleri izleniyor.</li>
+        </ul>
+
+        <h3>Alıştırmalar</h3>
+        <ol>
+          <li>Consumer’ın replicas sayısını 1 → 3 → 4 değiştirip partition atamasını gözlemleyin.</li>
+          <li>Topic üzerinde 10 adet event üretip k8s içindeki Kafka CLI ile offsetleri görün.</li>
+          <li>Kafka pod’unu silip PVC’nin veriyi koruduğunu doğrulayın.</li>
+          <li>Grafana’da lag panelini izleyerek consumer ölçeklendiğinde düşüşü görün.</li>
+          <li>ConfigMap değeri değiştirip deployment’ın yeni değeri alıp almadığını test edin.</li>
+        </ol>
+
+        <h3>Çoktan seçmeli soru örnekleri</h3>
+        <ol>
+          <li>Kafka topic içindeki her partition için hangi ifade doğrudur?
+            <ul><li>A. Sadece bir consumer tarafından okunur.</li><li>B. Her consumer aynı anda bütün partition’ları okur.</li><li>C. Topic her zaman tek partition’tan oluşur.</li></ul>
+          </li>
+          <li>StatefulSet neden Kafka için uygundur?
+            <ul><li>A. Çünkü statik isim ve persistence gerektirir.</li><li>B. Çünkü sadece HTTP servislerini yönetir.</li><li>C. Çünkü betik çalıştırır.</li></ul>
+          </li>
+          <li>advertised.listeners yanlışsa ne olur?
+            <ul><li>A. Client bağlanır fakat metadata adresi erişilemez.</li><li>B. Uygulama otomatik ölçeklenir.</li><li>C. Prometheus alarm verir.</li></ul>
+          </li>
+        </ol>
+        <div class="callout tip"><strong>💡 İpucu:</strong> Cevap anahtarını sınıf sonunda açıp tartışın: “Doğru network address kavramı, K8s içinde çözülen en kritik noktalardan biridir.”</div>
+      </section>
+
+      <section id="uyari-guvenlik">
+        <h2>Güvenlik notu</h2>
+        <div class="callout danger"><strong>⚠️ Eğitim amaçlı lab:</strong> Bu laboratuvar örneği PLAINTEXT, açık JMX ve Grafana admin/admin gibi kullanıcılarla hazırlanmıştır. Bu yapı sadece eğitim ve mahalli geliştirme için uygundur. Üretimde; TLS, SASL/SSL, ACL, JMX auth, secret yönetimi ve least-privilege yaklaşımı zorunludur.</div>
+      </section>
+
+      <section id="rapor">
+        <h2>Son rapor: oluşturulan dosyalar ve doğrulama durumu</h2>
+        <ul>
+          <li>k8s/00-namespace.yaml</li>
+          <li>k8s/10-kafka-statefulset.yaml</li>
+          <li>k8s/11-kafka-init-job.yaml</li>
+          <li>k8s/20-order-deployment.yaml</li>
+          <li>k8s/21-consumer-deployment.yaml</li>
+          <li>k8s/30-kafka-ui.yaml</li>
+          <li>k8s/40-observability/00-configmaps.yaml</li>
+          <li>k8s/40-observability/10-prometheus.yaml</li>
+          <li>k8s/40-observability/20-grafana.yaml</li>
+          <li>k8s/40-observability/30-jmx-kafka-exporters.yaml</li>
+          <li>k8s/kustomization.yaml</li>
+          <li>k8s/90-ingress-or-portforward.md</li>
+          <li>docs/kafka-rancher-egitim/index.html</li>
+        </ul>
+        <p>Doğrulananlar:</p>
+        <ul>
+          <li>Workspace içindeki mevcut Docker Compose ve Spring Boot projeleri incelendi.</li>
+          <li>Gerçek sınıf ve dosya isimleri kullanıldı.</li>
+          <li>YAML dosyaları syntactically basit ve kustomize uyumlu şekilde üretildi.</li>
+        </ul>
+        <p>Doğrulanamayanlar / varsayımlar:</p>
+        <ul>
+          <li>Rancher Desktop kümesi bu ortamda başlatılamadığı için canlı pod dağıtımı çalıştırılamadı; bu durum “doğrulanamadı” olarak not edildi.</li>
+          <li>Kafka broker’ın canlı dışarıya açık port-forward akışı üretim ortamında doğrudan test edilmedi; tanımı yazılı ve kuramsal olarak anlatıldı.</li>
+          <li>Compose tarafında topic isimleri <span class="note-code">orders.eventsx</span> ve Java tarafında DLT ismi <span class="note-code">orders.events.DLT</span> çelişkisi, üretim ortamında netleştirilmesi gereken bir ayrım olarak not edilmiştir.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll('.copy-btn');
+    buttons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const code = button.parentElement.querySelector('code')?.innerText || '';
+        try {
+          await navigator.clipboard.writeText(code);
+          const old = button.textContent;
+          button.textContent = 'Kopyalandı';
+          setTimeout(() => button.textContent = old, 1200);
+        } catch (error) {
+          button.textContent = 'Kopyalanamadı';
+          setTimeout(() => button.textContent = 'Kopyala', 1200);
+        }
+      });
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️ Açık tema';
+    }
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const dark = document.body.classList.contains('dark');
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+      themeToggle.textContent = dark ? '☀️ Açık tema' : '🌙 Koyu tema';
+    });
+
+    const sections = [...document.querySelectorAll('section')];
+    const navLinks = [...document.querySelectorAll('.sidebar a')];
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link => {
+          const active = link.getAttribute('href') === '#' + id;
+          link.classList.toggle('active', active);
+        });
+      });
+    }, { threshold: 0.3 });
+    sections.forEach(section => observer.observe(section));
+
+    document.querySelectorAll('.os-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.os-panel').forEach(panel => panel.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.target);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.code-block').forEach((block) => {
+      const following = block.nextElementSibling;
+      if (following && following.classList && following.classList.contains('output-box')) {
+        return;
+      }
+      const expected = document.createElement('div');
+      expected.className = 'output-box';
+      expected.innerHTML = '<strong>Beklenen çıktı:</strong> Komut başarısız olmazsa terminalde kısa bir durum çıktısı görünür; hedef kaynak, pod veya servis bilgisi ekranda yer alır.';
+      const explanation = document.createElement('div');
+      explanation.className = 'output-box';
+      explanation.innerHTML = '<strong>Bu komut ne yapıyor?</strong> Bu komut, istenen işlemi çalıştırır; çıktılar doğrulama, izleme ve sorun giderme için kullanılır.';
+      block.insertAdjacentElement('afterend', expected);
+      block.insertAdjacentElement('afterend', explanation);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jmx-exporter
+  namespace: kafka-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jmx-exporter
+  template:
+    metadata:
+      labels:
+        app: jmx-exporter
+    spec:
+      containers:
+        - name: jmx-exporter
+          image: jmx-exporter:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9404
+          volumeMounts:
+            - name: config
+              mountPath: /etc/jmx-exporter/config.yml
+              subPath: config.yml
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+      volumes:
+        - name: config
+          configMap:
+            name: jmx-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jmx-exporter
+  namespace: kafka-lab
+spec:
+  selector:
+    app: jmx-exporter
+  ports:
+    - name: metrics
+      port: 9404
+      targetPort: 9404
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-exporter
+  namespace: kafka-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-exporter
+  template:
+    metadata:
+      labels:
+        app: kafka-exporter
+    spec:
+      containers:
+        - name: kafka-exporter
+          image: danielqsj/kafka-exporter:v1.9.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --kafka.server=kafka:19092
+          ports:
+            - containerPort: 9308
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-exporter
+  namespace: kafka-lab
+spec:
+  selector:
+    app: kafka-exporter
+  ports:
+    - name: metrics
+      port: 9308
+      targetPort: 9308

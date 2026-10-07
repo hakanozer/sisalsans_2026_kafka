@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kafka-lab
+resources:
+  - 00-namespace.yaml
+  - 10-kafka-statefulset.yaml
+  - 11-kafka-init-job.yaml
+  - 20-order-deployment.yaml
+  - 21-consumer-deployment.yaml
+  - 30-kafka-ui.yaml
+  - 40-observability/00-configmaps.yaml
+  - 40-observability/10-prometheus.yaml
+  - 40-observability/20-grafana.yaml
+  - 40-observability/30-jmx-kafka-exporters.yaml

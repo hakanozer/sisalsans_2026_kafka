@@ -24,24 +24,26 @@ public class OrderEventConsumer {
                     record.key(), record.partition(), record.offset(), record.timestamp());
             System.out.printf("headers=%s order=%s status=%s%n",
                     record.headers(), event.orderId(), event.status());
-            // İş mantığı idempotent olmalı; listener hatasında ack etmeden exception fırlatın.
             acknowledgment.acknowledge();
-        }catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process order event", e);
         }
     }
 
     @RetryableTopic(attempts = "4",
-            exclude = { Exception.class },
             dltStrategy = DltStrategy.FAIL_ON_ERROR)
-    @KafkaListener(topics = "orders.eventsx", groupId = "order-processor")
-    void receive(OrderEvent e) {
+    @KafkaListener(topics = "orders.events", groupId = "order-processor")
+    void receiveRetry(OrderEvent e) {
+        if (e == null || e.orderId() == null || e.status() == null) {
+            throw new IllegalArgumentException("Invalid order event payload");
+        }
         System.out.println("OrderEvent: " + e);
     }
 
     @DltHandler
     void dlt(OrderEvent e, @Header(KafkaHeaders.DLT_EXCEPTION_MESSAGE) String msg) {
-        /* alarm + sakla */
+        System.out.printf("Dead-letter topic received orderId=%s status=%s cause=%s%n",
+                e.orderId(), e.status(), msg);
     }
 
 }
