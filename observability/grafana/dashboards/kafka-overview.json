@@ -1,0 +1,575 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Kafka, producer/consumer application and cluster overview.",
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "kafka_consumergroup_lag",
+          "legendFormat": "{{consumergroup}} / {{topic}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Consumer group lag",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "kafka_server_replicamanager_underreplicatedpartitions",
+          "legendFormat": "Under-replicated",
+          "refId": "A"
+        }
+      ],
+      "title": "Under-replicated partitions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "kafka_controller_kafkacontroller_offlinepartitionscount",
+          "legendFormat": "Offline",
+          "refId": "A"
+        }
+      ],
+      "title": "Offline partitions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "kafka_consumergroup_lag",
+          "legendFormat": "{{consumergroup}} / {{topic}} / {{partition}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Consumer lag by partition",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "kafka_network_request_queue_size",
+          "legendFormat": "Request queue",
+          "refId": "A"
+        }
+      ],
+      "title": "Broker request queue",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "up{job=~\"order|consumer|kafka-broker|kafka-exporter\"}",
+          "legendFormat": "{{job}} - {{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrape target health (1 = up)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(kafka_producer_record_send_rate{application=\"order\"})",
+          "legendFormat": "Records sent / sec",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(kafka_producer_record_error_rate{application=\"order\"})",
+          "legendFormat": "Record errors / sec",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(kafka_producer_record_retry_rate{application=\"order\"})",
+          "legendFormat": "Record retries / sec",
+          "refId": "C"
+        },
+        {
+          "expr": "avg(kafka_producer_request_latency_avg{application=\"order\"})",
+          "legendFormat": "Request latency avg (ms)",
+          "refId": "D"
+        }
+      ],
+      "title": "Producer send, error, retry and latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(kafka_consumer_fetch_manager_records_lag_max{application=\"consumer\"})",
+          "legendFormat": "Maximum records lag",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(kafka_consumer_fetch_manager_records_consumed_rate{application=\"consumer\"})",
+          "legendFormat": "Records consumed / sec",
+          "refId": "B"
+        },
+        {
+          "expr": "avg(kafka_consumer_fetch_manager_fetch_latency_avg{application=\"consumer\"})",
+          "legendFormat": "Fetch latency avg (ms)",
+          "refId": "C"
+        },
+        {
+          "expr": "avg(kafka_consumer_coordinator_commit_latency_avg{application=\"consumer\"})",
+          "legendFormat": "Commit latency avg (ms)",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(kafka_consumer_coordinator_rebalance_total{application=\"consumer\"})",
+          "legendFormat": "Rebalances",
+          "refId": "E"
+        },
+        {
+          "expr": "avg(kafka_consumer_coordinator_heartbeat_rate{application=\"consumer\"})",
+          "legendFormat": "Heartbeats / sec",
+          "refId": "F"
+        },
+        {
+          "expr": "max(kafka_consumer_last_poll_seconds_ago{application=\"consumer\"})",
+          "legendFormat": "Seconds since last poll",
+          "refId": "G"
+        }
+      ],
+      "title": "Consumer lag, throughput and coordination",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(kafka_server_brokertopicmetrics_bytesinpersec_total[5m])",
+          "legendFormat": "Bytes in/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(kafka_server_brokertopicmetrics_bytesoutpersec_total[5m])",
+          "legendFormat": "Bytes out/sec",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(kafka_log_size_bytes)",
+          "legendFormat": "Kafka log bytes",
+          "refId": "C"
+        },
+        {
+          "expr": "kafka_network_request_produce_totaltimems_mean",
+          "legendFormat": "Produce request latency (ms)",
+          "refId": "D"
+        }
+      ],
+      "title": "Broker network, request latency and log size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "kafka_server_replicamanager_underreplicatedpartitions",
+          "legendFormat": "Under-replicated partitions",
+          "refId": "A"
+        },
+        {
+          "expr": "kafka_controller_kafkacontroller_activecontrollercount",
+          "legendFormat": "Active controllers",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(kafka_server_replicamanager_isrshrinkspersec_total[5m])",
+          "legendFormat": "ISR shrink / sec",
+          "refId": "C"
+        },
+        {
+          "expr": "min(kafka_producer_buffer_available_bytes{application=\"order\"})",
+          "legendFormat": "Producer available buffer bytes",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(kafka_producer_bufferpool_wait_time_ns_total{application=\"order\"})",
+          "legendFormat": "Producer buffer wait (ns)",
+          "refId": "E"
+        }
+      ],
+      "title": "Broker health and producer buffers",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": [
+    "kafka",
+    "observability"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Kafka Observability",
+  "uid": "kafka-observability",
+  "version": 1
+}

@@ -1,0 +1,34 @@
+startDelaySeconds: 0
+jmxUrl: service:jmx:rmi:///jndi/rmi://broker:9999/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: 'kafka.server<type=(.+), name=(.+)><>Value'
+    name: kafka_server_$1_$2
+    type: GAUGE
+  - pattern: 'kafka.server<type=(.+), name=(.+)><>Count'
+    name: kafka_server_$1_$2_total
+    type: COUNTER
+  - pattern: 'kafka.controller<type=(.+), name=(.+)><>Value'
+    name: kafka_controller_$1_$2
+    type: GAUGE
+  - pattern: 'kafka.controller<type=(.+), name=(.+)><>Count'
+    name: kafka_controller_$1_$2_total
+    type: COUNTER
+  - pattern: 'kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>(Count|Mean|99thPercentile)'
+    name: kafka_network_request_$2_$1_$3
+    type: GAUGE
+    labels:
+      request: "$2"
+  - pattern: 'kafka.network<type=RequestChannel, name=RequestQueueSize><>Value'
+    name: kafka_network_request_queue_size
+    type: GAUGE
+  - pattern: 'kafka.log<type=Log, name=Size, topic=(.+), partition=(.+)><>Value'
+    name: kafka_log_size_bytes
+    type: GAUGE
+    labels:
+      topic: "$1"
+      partition: "$2"
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=(BytesInPerSec|BytesOutPerSec|MessagesInPerSec)><>Count'
+    name: kafka_server_$1_total
+    type: COUNTER

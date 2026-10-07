@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.works</groupId>
-    <artifactId>Order</artifactId>
+    <artifactId>Consumer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Order</name>
+    <name>Consumer</name>
     <description>Consumer</description>
     <url/>
     <licenses>
@@ -45,6 +45,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>

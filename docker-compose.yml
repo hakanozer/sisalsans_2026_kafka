@@ -2,7 +2,6 @@ services:
   broker:
     image: apache/kafka:4.3.1
     hostname: broker
-    container_name: kafka-lab
     ports:
       - "9092:9092"
     environment:
@@ -20,15 +19,64 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      JMX_PORT: 9999
+      KAFKA_JMX_OPTS: >-
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=broker
     volumes:
       - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "env -u JMX_PORT -u KAFKA_JMX_OPTS /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server broker:19092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    depends_on:
+      broker:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:19092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:19092 --create --if-not-exists --topic orders.eventsx --partitions 3 --replication-factor 1
+    restart: "no"
+
+  order:
+    build:
+      context: ./Order
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:19092
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+  consumer:
+    build:
+      context: ./Consumer
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:19092
+    ports:
+      - "8095:8095"
     restart: unless-stopped
 
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:latest
-    container_name: kafka-ui
     depends_on:
-      - broker
+      broker:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -37,5 +85,65 @@ services:
       DYNAMIC_CONFIG_ENABLED: "false"
     restart: unless-stopped
 
+  jmx-exporter:
+    build:
+      context: .
+      dockerfile: observability/jmx-exporter/Dockerfile
+    depends_on:
+      broker:
+        condition: service_healthy
+    volumes:
+      - ./observability/jmx-exporter/config.yml:/etc/jmx-exporter/config.yml:ro
+    ports:
+      - "9404:9404"
+    restart: unless-stopped
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.9.0
+    command:
+      - --kafka.server=broker:19092
+    depends_on:
+      broker:
+        condition: service_healthy
+    ports:
+      - "9308:9308"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    depends_on:
+      - order
+      - consumer
+      - jmx-exporter
+      - kafka-exporter
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
 volumes:
   kafka-data:
+  prometheus-data:
+  grafana-data:

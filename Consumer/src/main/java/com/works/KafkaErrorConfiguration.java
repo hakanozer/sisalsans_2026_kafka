@@ -11,11 +11,26 @@ import org.springframework.util.backoff.FixedBackOff;
 public class KafkaErrorConfiguration {
 
     @Bean
-    DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<Object, Object> template) {
+    DefaultErrorHandler kafkaErrorHandler(
+            KafkaTemplate<Object, Object> template) {
+
         var recoverer = new DeadLetterPublishingRecoverer(
-                template, (record, exception) ->
-                new TopicPartition(record.topic() + ".DLT", record.partition()));
-        return new DefaultErrorHandler(recoverer, new FixedBackOff(1_000L, 2L));
+                template,
+                (record, exception) ->
+                        new TopicPartition(
+                                record.topic() + ".DLT",
+                                record.partition()
+                        )
+        );
+
+        var errorHandler = new DefaultErrorHandler(
+                recoverer,
+                new FixedBackOff(1_000L, 2L)
+        );
+
+        errorHandler.addNotRetryableExceptions(RuntimeException.class);
+
+        return errorHandler;
     }
 
 }

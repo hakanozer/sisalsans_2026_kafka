@@ -1,8 +1,8 @@
 spring:
   application:
-    name: Order
+    name: order
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       acks: all
       retries: 10
@@ -11,6 +11,8 @@ spring:
         max.in.flight.requests.per.connection: 5
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    template:
+      observation-enabled: true
     consumer:
       group-id: order-processor
       auto-offset-reset: earliest
@@ -24,5 +26,18 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
     listener:
       ack-mode: manual
+      observation-enabled: true
 server:
   port: 8090
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
