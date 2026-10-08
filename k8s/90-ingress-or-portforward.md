@@ -7,6 +7,7 @@ kubectl get pods -n kafka-lab
 kubectl port-forward svc/order 8090:8090 -n kafka-lab
 kubectl port-forward svc/consumer 8095:8095 -n kafka-lab
 kubectl port-forward svc/kafka-ui 8080:8080 -n kafka-lab
+kubectl port-forward svc/schema-registry 8081:8081 -n kafka-lab
 kubectl port-forward svc/prometheus 9090:9090 -n kafka-lab
 kubectl port-forward svc/grafana 3000:3000 -n kafka-lab
 kubectl port-forward svc/kafka 9092:9092 -n kafka-lab
@@ -15,6 +16,7 @@ kubectl port-forward svc/kafka 9092:9092 -n kafka-lab
 - Order: http://localhost:8090/orders/add?orderId=ORDER-1001&status=CREATED
 - Consumer: http://localhost:8095/actuator/health
 - Kafka UI: http://localhost:8080
+- Schema Registry: http://localhost:8081/subjects
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000 (admin / admin)
 - Kafka broker: localhost:9092 (for local admin tools)
@@ -58,3 +60,15 @@ spec:
 ```
 
 Doğrudan Ingress kullanmak yerine `port-forward` daha güvenli ve daha net bir eğitim akışı sağlar.
+
+## 3) Rancher ile dağıtım
+
+Rancher'da hedef Kubernetes cluster'ını seçtikten sonra bu klasördeki manifestleri Kustomize ile yükleyin. Terminalden aktif cluster context'i doğrulayıp dağıtımı uygulayabilirsiniz:
+
+```bash
+kubectl config current-context
+kubectl apply -k k8s/
+kubectl rollout status deployment/schema-registry -n kafka-lab
+```
+
+Schema Registry cluster içinde `http://schema-registry:8081` adresinde kullanılabilir. Dışarıdan erişim gerekiyorsa port-forward kullanın veya cluster'ınızın Ingress/Gateway düzenine göre ayrı bir endpoint tanımlayın; Service varsayılan olarak cluster içi erişim sağlar.

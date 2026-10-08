@@ -26,6 +26,8 @@ spec:
                 configMapKeyRef:
                   name: kafka-config
                   key: KAFKA_BOOTSTRAP_SERVERS
+            - name: SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL
+              value: http://schema-registry:8081
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

@@ -8,6 +8,7 @@ resources:
   - 20-order-deployment.yaml
   - 21-consumer-deployment.yaml
   - 30-kafka-ui.yaml
+  - 31-schema-registry.yaml
   - 40-observability/00-configmaps.yaml
   - 40-observability/10-prometheus.yaml
   - 40-observability/20-grafana.yaml
