@@ -3,6 +3,9 @@ spring:
     name: order
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    properties:
+      schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8081}
+      specific.avro.reader: true
     producer:
       acks: all
       retries: 10
@@ -10,7 +13,7 @@ spring:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
     template:
       observation-enabled: true
     consumer:
@@ -23,7 +26,7 @@ spring:
         spring.json.value.default.type: com.works.OrderEvent
         spring.json.use.type.headers: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
     listener:
       ack-mode: manual
       observation-enabled: true

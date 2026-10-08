@@ -54,8 +54,11 @@ services:
     depends_on:
       kafka-init:
         condition: service_completed_successfully
+      schema-registry:
+        condition: service_started
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:19092
+      SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
     ports:
       - "8090:8090"
     restart: unless-stopped
@@ -66,8 +69,11 @@ services:
     depends_on:
       kafka-init:
         condition: service_completed_successfully
+      schema-registry:
+        condition: service_started
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:19092
+      SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
     ports:
       - "8095:8095"
     restart: unless-stopped
@@ -142,6 +148,19 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+    
+  schema-registry:
+    image: confluentinc/cp-schema-registry:8.3.2
+    container_name: kafka-schema-registry
+    depends_on:
+      - broker
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:19092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1  
 
 volumes:
   kafka-data:

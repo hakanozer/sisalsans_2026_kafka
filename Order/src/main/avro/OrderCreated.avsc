@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.works",
+  "fields": [
+    {"name": "orderId", "type": "string"},
+    {"name": "amountCents", "type": "long"},
+    {"name": "currency", "type": "string"}
+  ]
+}
